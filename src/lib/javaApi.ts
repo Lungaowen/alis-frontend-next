@@ -4,7 +4,7 @@ import type { DocumentItem } from "./alis";
 
 export const JAVA_BASE_URL =
   (import.meta.env.VITE_JAVA_API_URL as string | undefined)?.replace(/\/+$/, "") ||
-  "http://54.235.231.201:8080";
+  "https://54-235-231-201.nip.io";
 
 const TOKEN_KEY = "alis_token";
 

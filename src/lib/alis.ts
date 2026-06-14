@@ -186,7 +186,7 @@ export async function uploadDocument(
     message: string;
     documentId: number;
     status: string;
-  }>(`${import.meta.env.VITE_JAVA_API_URL || "http://54.235.231.201:8080"}/api/client/upload`, formData, {
+  }>(`${import.meta.env.VITE_JAVA_API_URL || "https://54-235-231-201.nip.io"}/api/client/upload`, formData, {
     headers: {
       Authorization: token ? `Bearer ${token}` : "",
       // Let browser set proper multipart boundary
