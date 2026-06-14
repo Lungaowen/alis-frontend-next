@@ -6,7 +6,7 @@ import { getToken } from "./javaApi";
 
 export const PYTHON_BASE_URL =
   (import.meta.env.VITE_PYTHON_API_URL as string | undefined)?.replace(/\/+$/, "") ||
-  "http://54.235.231.201:8000";
+  "https://102-37-137-111.nip.io";
 
 export const pythonApi = axios.create({
   baseURL: PYTHON_BASE_URL,

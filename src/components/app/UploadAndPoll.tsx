@@ -68,8 +68,12 @@ export function UploadAndPoll({ onCompleted, variant = "full", showReadiness = f
   }, [onCompleted, stopPolling]);
 
   async function handleFile(f: File) {
-    if (f.type !== "application/pdf") {
-      toast.error("Please upload a PDF file");
+    const validTypes = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"];
+    const validExtensions = [".pdf", ".docx", ".txt"];
+    const fileExtension = f.name.toLowerCase().substring(f.name.lastIndexOf("."));
+    
+    if (!validTypes.includes(f.type) && !validExtensions.includes(fileExtension)) {
+      toast.error("Please upload a PDF, DOCX, or TXT file");
       return;
     }
     setFile(f);
@@ -128,12 +132,12 @@ export function UploadAndPoll({ onCompleted, variant = "full", showReadiness = f
       >
         <UploadCloud className="h-10 w-10 text-muted-foreground" strokeWidth={1.5} />
         <p className="mt-3 text-base font-medium">
-          {file ? file.name : "Drop a PDF here or click to browse"}
+          {file ? file.name : "Drop a PDF, DOCX, or TXT here or click to browse"}
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">PDF only • 50 MB max</p>
+        <p className="mt-1 text-xs text-muted-foreground">PDF, DOCX, TXT • 50 MB max</p>
         <input
           type="file"
-          accept="application/pdf"
+          accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];

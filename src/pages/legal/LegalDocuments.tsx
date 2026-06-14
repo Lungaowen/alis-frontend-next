@@ -50,7 +50,14 @@ export default function LegalDocumentsPage() {
 
   // ── Upload ────────────────────────────────────────────────────────────
   async function handleUpload(file: File) {
-    if (file.type !== "application/pdf") { toast.error("Only PDF files accepted"); return; }
+    const validTypes = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"];
+    const validExtensions = [".pdf", ".docx", ".txt"];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf("."));
+    
+    if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
+      toast.error("Please upload a PDF, DOCX, or TXT file");
+      return;
+    }
     setUploadFile(file);
     setUploadPct(0);
     try {
@@ -183,9 +190,9 @@ export default function LegalDocumentsPage() {
         >
           <UploadCloud className="h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
           <p className="mt-3 text-sm font-medium">
-            {uploadFile ? uploadFile.name : "Drop a PDF here or click to browse"}
+            {uploadFile ? uploadFile.name : "Drop a PDF, DOCX, or TXT here or click to browse"}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">PDF only · 50 MB max</p>
+          <p className="mt-1 text-xs text-muted-foreground">PDF, DOCX, TXT · 50 MB max</p>
 
           {uploadFile ? (
             <div className="mt-4 w-full max-w-xs space-y-1">
@@ -200,7 +207,7 @@ export default function LegalDocumentsPage() {
             </Button>
           )}
 
-          <input ref={fileRef} type="file" accept="application/pdf" className="hidden"
+          <input ref={fileRef} type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ""; }}
           />
         </div>

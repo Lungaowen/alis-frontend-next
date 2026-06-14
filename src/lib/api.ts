@@ -6,9 +6,8 @@
 
 const STORAGE_KEY = "alis.apiBaseUrl";
 const ENV_DEFAULT =
-  (import.meta.env.VITE_JAVA_API_URL as string | undefined) ??
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
-  "https://54-235-231-201.nip.io";
+  (import.meta.env.VITE_JAVA_API_URL as string | undefined) ;
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ;
 
 export function getApiBaseUrl(): string {
   if (typeof window !== "undefined") {

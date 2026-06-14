@@ -174,20 +174,35 @@ export async function uploadDocument(
   const progressCb =
     typeof optsOrProgress === "function" ? optsOrProgress : onProgress;
 
+  const session = getStoredSession();
+  const clientId = session?.clientId;
+
+  if (!clientId) {
+    throw new Error("User not authenticated. Please login first.");
+  }
+
+  // Auto-generate document ID (use timestamp + random for uniqueness)
+  const documentId = Date.now() + Math.floor(Math.random() * 1000);
+
   const formData = new FormData();
-  formData.append("file", file);
-  formData.append("documentType", opts.documentType);
+  formData.append("document_id", documentId.toString());
+  formData.append("client_id", clientId.toString());
+  formData.append("document_title", opts.title || file.name);
+  formData.append("document_type", opts.documentType);
   formData.append("jurisdiction", opts.jurisdiction ?? "South Africa");
-  if (opts.title) formData.append("document_title", opts.title); // if backend expects it
+  formData.append("file", file);
 
   const token = localStorage.getItem("alis_token");
 
   const response = await axios.post<{
-    message: string;
-    documentId: number;
+    task_id: string;
     status: string;
-  }>(`${import.meta.env.VITE_JAVA_API_URL || "https://54-235-231-201.nip.io"}/api/client/upload`, formData, {
+    document_id: number;
+    file_name: string;
+    message: string;
+  }>("https://102-37-137-111.nip.io/api/process", formData, {
     headers: {
+      accept: "application/json",
       Authorization: token ? `Bearer ${token}` : "",
       // Let browser set proper multipart boundary
     },
@@ -201,7 +216,7 @@ export async function uploadDocument(
 
   return {
     message: response.data.message ?? "QUEUED",
-    documentId: response.data.documentId,
+    documentId: response.data.document_id || documentId,
     title: opts.title || file.name,
     status: response.data.status as DocumentStatus,
   };
@@ -212,10 +227,10 @@ export const triggerAnalysis = (documentId: number) =>
   pPost<{ status: string }>(`/api/analysis/run/${documentId}`, {});
 
 export const getStatus = (documentId: number) =>
-  httpGet<ComplianceStatus>(`/api/compliance/status/${documentId}`);
+  pGet<ComplianceStatus>(`/api/analysis/status/${documentId}`);
 
 export const getResult = (documentId: number) =>
-  httpGet<ReportInfo>(`/api/compliance/result/${documentId}`);
+  httpGet<ReportInfo>(`/api/analysis/result/${documentId}`);
 
 export const getPipelineStatus = (documentId: number) =>
   pGet<{ documentId: number; status: string; step?: string; progress?: number; message?: string }>(
@@ -315,10 +330,76 @@ export interface SearchResult {
   clauses: ClauseSearchHit[];
 }
 
-export const searchGlobal = (q: string, page = 0, pageSize = 10) =>
-  httpGet<SearchResult>(
-    `/api/search?q=${encodeURIComponent(q)}&page=${page}&pageSize=${pageSize}`
+export const searchGlobal = async (q: string, page = 0, pageSize = 10): Promise<SearchResult> => {
+  const response = await axios.get(
+    `https://alis-search.lungaowen14.workers.dev/?q=${encodeURIComponent(q)}`
   );
+
+  // Transform Workers.dev response to match SearchResult interface
+  const data = response.data;
+  const documents: DocumentSearchHit[] = [];
+  const reports: ReportSearchHit[] = [];
+  const clauses: ClauseSearchHit[] = [];
+
+  if (data.results && Array.isArray(data.results)) {
+    for (const result of data.results) {
+      if (result.type === "document" && Array.isArray(result.rows)) {
+        for (const row of result.rows) {
+          documents.push({
+            documentId: row.document_id,
+            title: row.title || "Untitled",
+            status: row.status || "ANALYZED",
+            uploadedAt: row.uploaded_at || new Date().toISOString(),
+            clientId: row.client_id || 0,
+          });
+        }
+      } else if (result.type === "report" && Array.isArray(result.rows)) {
+        for (const row of result.rows) {
+          reports.push({
+            reportId: row.report_id || 0,
+            riskLevel: row.risk_level || "LOW",
+            analysisStatus: row.analysis_status || "COMPLETED",
+            aiRecommendation: row.ai_recommendation,
+            aiExplanation: row.ai_explanation,
+            documentId: row.document_id || 0,
+            documentTitle: row.document_title,
+            clientId: row.client_id || 0,
+            generatedAt: row.generated_at,
+          });
+        }
+      } else if (result.type === "clause" && Array.isArray(result.rows)) {
+        for (const row of result.rows) {
+          clauses.push({
+            clauseId: row.clause_id || 0,
+            clauseText: row.clause_text || "",
+            riskLevel: row.risk_level || "LOW",
+            riskReason: row.risk_reason,
+            pageNumber: row.page_number,
+            documentId: row.document_id || 0,
+            documentTitle: row.document_title,
+            clientId: row.client_id || 0,
+          });
+        }
+      }
+    }
+  }
+
+  // Apply pagination
+  const startIndex = page * pageSize;
+  const endIndex = startIndex + pageSize;
+
+  return {
+    query: q,
+    page,
+    pageSize,
+    totalDocuments: documents.length,
+    totalReports: reports.length,
+    totalClauses: clauses.length,
+    documents: documents.slice(startIndex, endIndex),
+    reports: reports.slice(startIndex, endIndex),
+    clauses: clauses.slice(startIndex, endIndex),
+  };
+};
 
 // ====================== PROFILE ======================
 export const updateProfile = (body: {
