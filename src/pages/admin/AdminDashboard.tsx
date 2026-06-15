@@ -54,10 +54,10 @@ export default function AdminDashboardPage() {
       ) : (
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Total Clients" value={data?.totalClients ?? 0} />
-            <StatCard label="Total Documents" value={data?.totalDocuments ?? 0} />
-            <StatCard label="Total Reports" value={data?.totalReports ?? 0} tone="accent" />
-            <StatCard label="High Risk Documents" value={data?.highRiskDocuments ?? 0} tone="destructive" />
+            <StatCard label="Total Clients" value={data?.stats?.totalClients ?? 0} />
+            <StatCard label="Total Documents" value={data?.stats?.totalDocuments ?? 0} />
+            <StatCard label="Total Reports" value={data?.stats?.totalReports ?? 0} tone="accent" />
+            <StatCard label="High Risk Reports" value={data?.stats?.highRiskReports ?? 0} tone="destructive" />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">

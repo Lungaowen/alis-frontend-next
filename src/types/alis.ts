@@ -106,3 +106,78 @@ export interface SearchResponse {
   reports: Array<Record<string, unknown>>;
   clauses: Array<Record<string, unknown>>;
 }
+
+export interface DashboardStats {
+  totalClients: number;
+  totalDocuments: number;
+  totalReports: number;
+  activeClients: number;
+  pendingDocuments: number;
+  failedDocuments: number;
+  processedDocuments: number;
+  highRiskReports: number;
+}
+
+export interface DashboardClient {
+  clientId: number;
+  fullName: string;
+  email: string;
+  role: Role;
+  registeredAt: string;
+  documentCount: number;
+  recentDocuments: unknown | null;
+}
+
+export interface DashboardDocument {
+  documentId: number;
+  title: string;
+  status: PipelineStatus;
+  ingestionSource: "UPLOAD" | "MANUAL";
+  uploadedAt: string;
+  filePath: string | null;
+  fileUrl: string;
+  clientId: number;
+  clientName: string;
+}
+
+export interface DashboardReport {
+  reportId: number | null;
+  documentId: number | null;
+  clientId: number | null;
+  documentTitle: string | null;
+  riskLevel: RiskLevel | null;
+  analysisStatus: PipelineStatus | null;
+  aiRecommendation: string | null;
+  aiExplanation: string | null;
+  generatedAt: string | null;
+  modelVersion: string | null;
+  reportSummaryJson: unknown | null;
+  similarityScore: number | null;
+}
+
+export interface RoleDistribution {
+  role: Role;
+  count: number;
+}
+
+export interface RiskDistribution {
+  riskLevel: RiskLevel;
+  count: number;
+}
+
+export interface UploadTrend {
+  year: number;
+  month: number;
+  count: number;
+  label: string;
+}
+
+export interface DashboardResponse {
+  stats: DashboardStats;
+  clients: DashboardClient[];
+  recentDocuments: DashboardDocument[];
+  reports: DashboardReport[];
+  roleDistribution: RoleDistribution[];
+  riskDistribution: RiskDistribution[];
+  uploadTrend: UploadTrend[];
+}

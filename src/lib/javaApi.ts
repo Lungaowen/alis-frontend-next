@@ -1,6 +1,7 @@
 // src/lib/javaApi.ts
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 import type { DocumentItem } from "./alis";
+import type { DashboardResponse } from "../types/alis";
 
 export const JAVA_BASE_URL =
   (import.meta.env.VITE_JAVA_API_URL as string | undefined)?.replace(/\/+$/, "") ||
@@ -79,6 +80,13 @@ export const documentApi = {
   /** DELETE /api/client/documents/{id} */
   deleteDocument: (id: number): Promise<{ success?: boolean }> =>
     jDelete<{ success?: boolean }>(`/api/client/documents/${id}`),
+};
+
+// ─── Admin endpoints (Java) ───────────────────────────────────────────────
+export const adminApi = {
+  /** GET /api/admin/dashboard — fetch admin dashboard data */
+  getDashboard: (): Promise<DashboardResponse> =>
+    jGet<DashboardResponse>("/api/admin/dashboard"),
 };
 
 export default javaApi;

@@ -11,7 +11,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type Step = "idle" | "uploading" | "uploaded" | "processing" | "ready" | "failed";
+type Step = "idle" | "uploading" | "uploaded" | "processing" | "extracted" | "ready" | "failed";
 
 interface Props {
   onCompleted?: (result: ReportInfo) => void;
@@ -46,11 +46,24 @@ export function UploadAndPoll({ onCompleted, variant = "full", showReadiness = f
       try {
         const s = await getStatus(id);
         setStatus(s);
+        
+        // Check for failed status
         if (s.documentStatus === "FAILED" || s.analysisStatus === "FAILED") {
           stopPolling();
           setStep("failed");
           toast.error("Analysis failed");
-        } else if (s.reportReady) {
+          return;
+        }
+        
+        // Check for EXTRACTED status (document is ready for analysis)
+        if (s.documentStatus === "EXTRACTED") {
+          stopPolling();
+          setStep("extracted");
+          return;
+        }
+        
+        // Check for reportReady as fallback
+        if (s.reportReady) {
           stopPolling();
           setStep("ready");
           try {
@@ -60,9 +73,11 @@ export function UploadAndPoll({ onCompleted, variant = "full", showReadiness = f
           } catch (e) {
             toast.error("Could not load AI result");
           }
+          return;
         }
-      } catch {
-        // keep polling silently
+      } catch (error) {
+        console.error("Polling error:", error);
+        // Keep polling silently on errors to prevent crashes
       }
     }, 3000);
   }, [onCompleted, stopPolling]);
@@ -156,7 +171,7 @@ export function UploadAndPoll({ onCompleted, variant = "full", showReadiness = f
         </div>
       )}
 
-      {(step === "uploaded" || step === "processing" || step === "ready" || step === "failed") && (
+      {(step === "uploaded" || step === "processing" || step === "extracted" || step === "ready" || step === "failed") && (
         <div className="rounded-lg border border-border bg-card p-5">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Analysis pipeline
@@ -164,8 +179,8 @@ export function UploadAndPoll({ onCompleted, variant = "full", showReadiness = f
           <ol className="mt-4 grid gap-3 sm:grid-cols-3">
             <Stepper step={1} label="Uploaded" state="done" />
             <Stepper
-              step={2} label="Processing"
-              state={step === "processing" ? "current" : step === "ready" ? "done" : step === "failed" ? "failed" : "pending"}
+              step={2} label="Extracted"
+              state={step === "processing" ? "current" : step === "extracted" || step === "ready" ? "done" : step === "failed" ? "failed" : "pending"}
             />
             <Stepper
               step={3} label="Report Ready"
@@ -175,6 +190,26 @@ export function UploadAndPoll({ onCompleted, variant = "full", showReadiness = f
           {status?.message && (
             <p className="mt-4 text-xs text-muted-foreground">{status.message}</p>
           )}
+        </div>
+      )}
+
+      {step === "extracted" && (
+        <div className="rounded-lg border border-accent/30 bg-accent/5 p-6">
+          <div className="flex items-start gap-3">
+            <FileCheck2 className="h-5 w-5 text-accent mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-foreground">Document extracted successfully</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Your document has been processed and is ready for analysis. Click the button below to start the AI analysis.
+              </p>
+              <div className="mt-4 flex gap-2">
+                <Button onClick={reanalyze}>
+                  <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Start Analysis
+                </Button>
+                <Button variant="ghost" onClick={() => navigate(`/legal/documents`)}>View all documents</Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

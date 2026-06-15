@@ -5,9 +5,7 @@
 //   3. "http://localhost:8081"           (fallback)
 
 const STORAGE_KEY = "alis.apiBaseUrl";
-const ENV_DEFAULT =
-  (import.meta.env.VITE_JAVA_API_URL as string | undefined) ;
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ;
+const ENV_DEFAULT = "https://54-235-231-201.nip.io";
 
 export function getApiBaseUrl(): string {
   if (typeof window !== "undefined") {

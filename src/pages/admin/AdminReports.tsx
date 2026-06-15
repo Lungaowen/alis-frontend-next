@@ -12,6 +12,7 @@ import {
   adminInactiveClients, adminRegistrationTrend, adminReportSummary,
   adminRoleDistribution, adminTopUploaders,
   type RegistrationTrendRow, type RoleDistributionRow, type TopUploaderRow,
+  type PaginatedTopUploadersResponse,
 } from "@/lib/alis";
 import { toast } from "sonner";
 
@@ -110,6 +111,16 @@ function TrendTab() {
       .catch((e) => toast.error(e?.message ?? "Failed to load trend"))
       .finally(() => setLoading(false));
   }, [months]);
+
+  // Format data for chart - convert numeric month to readable label
+  const chartData = rows.map(row => ({
+    ...row,
+    label: new Date(row.year, row.month - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+  })).sort((a, b) => {
+    if (a.year !== b.year) return a.year - b.year;
+    return a.month - b.month;
+  });
+
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
@@ -127,9 +138,9 @@ function TrendTab() {
       {loading ? <Spinner /> : rows.length === 0 ? <EmptyState title="No registrations recorded" /> : (
         <div className="h-80 rounded-lg border border-border bg-card p-5">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={rows}>
+            <LineChart data={chartData}>
               <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
               <Line type="monotone" dataKey="count" stroke="hsl(var(--accent))" strokeWidth={2} />
@@ -142,19 +153,27 @@ function TrendTab() {
 }
 
 function TopTab() {
-  const [rows, setRows] = useState<TopUploaderRow[]>([]);
+  const [page, setPage] = useState(0);
+  const [pageSize] = useState(10);
+  const [response, setResponse] = useState<PaginatedTopUploadersResponse | null>(null);
   const [inactive, setInactive] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  
   useEffect(() => {
+    setLoading(true);
     Promise.all([
-      adminTopUploaders().catch(() => []),
+      adminTopUploaders(page, pageSize).catch(() => null),
       adminInactiveClients().catch(() => ({ count: 0 })),
     ]).then(([t, i]) => {
-      setRows(Array.isArray(t) ? t : []);
+      setResponse(t);
       const c = Array.isArray(i) ? i.length : (i as { count?: number }).count ?? 0;
       setInactive(c);
     }).finally(() => setLoading(false));
-  }, []);
+  }, [page, pageSize]);
+
+  const rows = response?.content ?? [];
+  const totalPages = response?.totalPages ?? 0;
+
   if (loading) return <Spinner />;
   return (
     <div className="space-y-4">
@@ -173,16 +192,39 @@ function TopTab() {
             </thead>
             <tbody>
               {rows.map((r, i) => (
-                <tr key={i} className="border-t border-border">
-                  <td className="px-4 py-3 text-mono text-xs text-muted-foreground">#{r.rank ?? i + 1}</td>
+                <tr key={r.clientId ?? i} className="border-t border-border">
+                  <td className="px-4 py-3 text-mono text-xs text-muted-foreground">#{r.rank ?? (page * pageSize) + i + 1}</td>
                   <td className="px-4 py-3 font-medium">{r.fullName}</td>
                   <td className="px-4 py-3 text-muted-foreground">{r.email}</td>
                   <td className="px-4 py-3">{r.role.replace(/_/g, " ")}</td>
-                  <td className="px-4 py-3">{r.documentsUploaded ?? r.count ?? 0}</td>
+                  <td className="px-4 py-3">{r.documentCount ?? r.documentsUploaded ?? r.count ?? 0}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+              <p className="text-sm text-muted-foreground">
+                Page {page + 1} of {totalPages} ({response?.totalElements ?? 0} total)
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage(p => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className="px-3 py-1 text-sm border border-border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                  disabled={page >= totalPages - 1}
+                  className="px-3 py-1 text-sm border border-border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

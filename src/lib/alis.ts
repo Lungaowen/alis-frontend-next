@@ -109,12 +109,53 @@ export interface ClientRecord {
 }
 
 export interface AdminDashboardData {
-  totalClients?: number;
-  totalDocuments?: number;
-  totalReports?: number;
-  highRiskDocuments?: number;
+  stats?: {
+    totalClients: number;
+    totalDocuments: number;
+    totalReports: number;
+    activeClients: number;
+    pendingDocuments: number;
+    failedDocuments: number;
+    processedDocuments: number;
+    highRiskReports: number;
+  };
+  clients?: Array<{
+    clientId: number;
+    fullName: string;
+    email: string;
+    role: string;
+    registeredAt: string;
+    documentCount: number;
+    recentDocuments: unknown | null;
+  }>;
+  recentDocuments?: Array<{
+    documentId: number;
+    title: string;
+    status: string;
+    ingestionSource: string;
+    uploadedAt: string;
+    filePath: string | null;
+    fileUrl: string;
+    clientId: number;
+    clientName: string;
+  }>;
+  reports?: Array<{
+    reportId: number | null;
+    documentId: number | null;
+    clientId: number | null;
+    documentTitle: string | null;
+    riskLevel: string | null;
+    analysisStatus: string | null;
+    aiRecommendation: string | null;
+    aiExplanation: string | null;
+    generatedAt: string | null;
+    modelVersion: string | null;
+    reportSummaryJson: unknown | null;
+    similarityScore: number | null;
+  }>;
   roleDistribution?: Array<{ role: string; count: number }> | Record<string, number>;
-  uploadTrend?: Array<{ date?: string; month?: string; count: number }>;
+  riskDistribution?: Array<{ riskLevel: string; count: number }>;
+  uploadTrend?: Array<{ year: number; month: number; count: number; label: string }>;
 }
 
 export interface AuditEntry {
@@ -134,8 +175,14 @@ export interface RoleDistributionRow {
   percentage?: number;
 }
 
+export interface RoleDistributionResponse {
+  countByRole: Record<string, number>;
+  totalClients: number;
+}
+
 export interface RegistrationTrendRow {
-  month: string;
+  year: number;
+  month: number;
   count: number;
 }
 
@@ -147,6 +194,36 @@ export interface TopUploaderRow {
   role: string;
   documentsUploaded?: number;
   count?: number;
+  documentCount?: number;
+}
+
+export interface PaginatedTopUploadersResponse {
+  content: TopUploaderRow[];
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+    sort: {
+      sorted: boolean;
+      unsorted: boolean;
+      empty: boolean;
+    };
+    offset: number;
+    paged: boolean;
+    unpaged: boolean;
+  };
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+  numberOfElements: number;
+  first: boolean;
+  size: number;
+  number: number;
+  sort: {
+    sorted: boolean;
+    unsorted: boolean;
+    empty: boolean;
+  };
+  empty: boolean;
 }
 
 export interface UploadOptions {
@@ -273,16 +350,27 @@ export const adminInactiveClients = () =>
   httpGet<{ count?: number; clients?: ClientRecord[] } | ClientRecord[]>(
     "/api/admin/clients/reports/inactive"
   );
-  export const adminRegistrationTrend = (months = 12) =>
-  httpGet<RegistrationTrendRow[]>(`/api/admin/clients/reports/registration-trend?months=${months}`);
+  export const adminRegistrationTrend = async (months = 12): Promise<RegistrationTrendRow[]> => {
+  const response = await httpGet<{ trend: RegistrationTrendRow[] }>(`/api/admin/clients/reports/registration-trend?months=${months}`);
+  return response?.trend ?? [];
+};
   export const adminReportSummary = () =>
   httpGet<Record<string, number | string>>("/api/admin/clients/reports/summary");
 
-export const adminRoleDistribution = () =>
-  httpGet<RoleDistributionRow[]>("/api/admin/clients/reports/role-distribution");
+export const adminRoleDistribution = async (): Promise<RoleDistributionRow[]> => {
+  const response = await httpGet<RoleDistributionResponse>("/api/admin/clients/reports/role-distribution");
+  if (!response || !response.countByRole) return [];
+  
+  const total = response.totalClients || 0;
+  return Object.entries(response.countByRole).map(([role, count]) => ({
+    role,
+    count,
+    percentage: total > 0 ? (count / total) * 100 : 0,
+  }));
+};
 
-export const adminTopUploaders = () =>
-  httpGet<TopUploaderRow[]>("/api/admin/clients/reports/top-uploaders");
+export const adminTopUploaders = (page = 0, size = 10) =>
+  jGet<PaginatedTopUploadersResponse>(`/api/admin/clients/reports/top-uploaders?page=${page}&size=${size}`);
 // ====================== GLOBAL SEARCH ======================
 export interface DocumentSearchHit {
   documentId: number;

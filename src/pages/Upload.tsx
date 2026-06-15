@@ -42,13 +42,32 @@ export default function UploadPage() {
         setStatus(s);
         bumps++;
         setProgress((p) => Math.min(95, p + Math.max(2, 8 - bumps)));
+        
+        // Check for EXTRACTED status (document is ready for analysis)
+        if (s.documentStatus === "EXTRACTED" || s.status === "EXTRACTED") {
+          setProgress(100);
+          return;
+        }
+        
+        // Check for reportReady as fallback
         if (s.reportReady) {
           setProgress(100);
           return;
         }
+        
+        // Check for failed status
+        if (s.documentStatus === "FAILED" || s.analysisStatus === "FAILED") {
+          toast.error("Analysis failed");
+          return;
+        }
+        
         setTimeout(tick, 2500);
       } catch (e) {
-        if (!cancelled) toast.error((e as Error).message);
+        console.error("Polling error:", e);
+        if (!cancelled) {
+          // Keep polling silently on errors to prevent crashes
+          setTimeout(tick, 2500);
+        }
       }
     };
     tick();
