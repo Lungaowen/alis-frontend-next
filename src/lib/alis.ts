@@ -317,6 +317,136 @@ export const getPipelineStatus = (documentId: number) =>
 export const getAnalysisReport = (documentId: number) =>
   pGet<ReportInfo>(`/api/analysis/report/${documentId}`);
 
+export interface DetailedReport {
+  similarity_score: number;
+  client_id: number;
+  document_id: number;
+  generated_at: string;
+  report_id: number;
+  rule_id: number;
+  ai_explanation: string;
+  ai_recommendation: string;
+  analysis_status: string;
+  model_version: string;
+  risk_level: RiskLevel;
+  search_vector: string;
+  report_url: string;
+  report_summary_json: {
+    clauses: Array<{
+      text: string;
+      type: string;
+      clauseId: string;
+      highlight: boolean;
+      pageNumber: number | null;
+      explanation: string;
+      mlRiskLevel: string;
+      clauseNumber: number;
+      lawReference: string | null;
+      violatedRule: string | null;
+      groqRiskLevel: string;
+      finalRiskLevel: string;
+      recommendation: string;
+      detectedKeywords: string[];
+      similarToHistorical: any;
+    }>;
+    analysis: {
+      keyFindings: string;
+      violatedRules: any[];
+      lawsApplicable: string[];
+      executiveSummary: string;
+      similarCasesUsed: number;
+      overallExplanation: string;
+      overallRecommendation: string;
+      similarReportsContext: Array<{
+        riskLevel: string;
+        documentTitle: string;
+        recommendation: string;
+      }>;
+    };
+    entities: {
+      dates: Array<{ type: string; isoDate: string; rawString: string }>;
+      parties: any[];
+      durations: any[];
+      locations: Array<{ name: string }>;
+      caseDetails: any;
+      identifiers: {
+        idNumbers: any[];
+        caseNumbers: string[];
+        companyRegNumbers: string[];
+        actSectionReferences: any[];
+      };
+      willDetails: any;
+      contactDetails: {
+        emails: any[];
+        phones: any[];
+        addresses: string[];
+      };
+      statuteDetails: any;
+      extractionStats: {
+        confidence: number;
+        totalEntities: number;
+      };
+      monetaryAmounts: any[];
+    };
+    keywords: {
+      keywordStats: {
+        tfidfKeywordCount: number;
+        totalMatchedCategories: number;
+      };
+      tfidfKeywords: Array<{ score: number; keyword: string }>;
+      topRiskCategories: any[];
+      detectedCategories: Array<{
+        score: number;
+        category: string;
+        riskLevel: string;
+        lawReference: string;
+        matchedKeywords: string[];
+      }>;
+      documentTypeKeywords: string[];
+      dominantLawReferences: string[];
+      overallKeywordRiskLevel: string;
+    };
+    reportMeta: {
+      clientId: number;
+      documentId: number;
+      generatedAt: string;
+      documentType: string;
+      jurisdiction: string;
+      modelVersion: string;
+      documentTitle: string;
+      pipelineVersion: string;
+    };
+    riskProfile: {
+      totalClauses: number;
+      lowRiskClauses: number;
+      complianceScore: number;
+      highRiskClauses: number;
+      flaggedForReview: boolean;
+      overallRiskLevel: string;
+      mediumRiskClauses: number;
+    };
+    topRulesUsed: Array<{
+      keyword: string;
+      rule_id: number;
+      act_name: string;
+      act_year: number;
+      act_number: string;
+      risk_level: string;
+      suggestion: string;
+      act_section: string | null;
+      requirements: string;
+      relevanceScore: number;
+    }>;
+  };
+}
+
+export const getDetailedReport = async (documentId: number): Promise<DetailedReport> => {
+  const response = await axios.get<DetailedReport>(
+    `https://102-37-137-111.nip.io/api/analysis/report/${documentId}`
+  );
+  return response.data;
+};
+
 export const getDocumentReports = async (documentId: number): Promise<ReportInfo[]> => {
   try {
     const report = await httpGet<ReportInfo>(`/api/client/documents/${documentId}/report`);

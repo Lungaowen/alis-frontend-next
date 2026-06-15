@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Download, FileCheck2, Loader2, Play, RefreshCcw, Sparkles, UploadCloud } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Download, FileCheck2, Loader2, Play, RefreshCcw, Sparkles, UploadCloud, File } from "lucide-react";
 import { PortalLayout } from "@/components/app/PortalLayout";
 import { Spinner, EmptyState, Gauge, ProgressBar } from "@/components/app/Primitives";
 import { StatusBadge, RiskBadge } from "@/components/app/StatusBadges";
@@ -270,9 +271,18 @@ export default function LegalDocumentsPage() {
                                               <><Play className="mr-1 h-3 w-3" />Trigger Analysis</>}
                             </Button>
 
+                            {d.fileUrl && (
+                              <Button size="sm" variant="outline" asChild>
+                                <a href={d.fileUrl} target="_blank" rel="noopener noreferrer">
+                                  <File className="mr-1 h-3 w-3" /> Document
+                                </a>
+                              </Button>
+                            )}
                             {(analyzed || ds.step === "done") && (
-                              <Button size="sm" variant="outline" onClick={() => viewReport(d.documentId)}>
-                                <Sparkles className="mr-1 h-3 w-3" /> View Report
+                              <Button size="sm" variant="outline" asChild>
+                                <Link to={`/legal/report/${d.documentId}`}>
+                                  <Sparkles className="mr-1 h-3 w-3" /> View Report
+                                </Link>
                               </Button>
                             )}
                           </div>

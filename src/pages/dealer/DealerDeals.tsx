@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Download, Sparkles, Loader2, RefreshCw } from "lucide-react";
+import { Link } from "react-router-dom";
+import { CalendarIcon, Download, Sparkles, Loader2, RefreshCw, File } from "lucide-react";
 import { PortalLayout } from "@/components/app/PortalLayout";
 import { Spinner, EmptyState, ProgressBar } from "@/components/app/Primitives";
 import { StatusBadge, RiskBadge } from "@/components/app/StatusBadges";
@@ -183,7 +184,16 @@ export default function DealerDealsPage() {
                     <Loader2 className="mr-1 h-3 w-3 animate-spin" /> Analysis in progress...
                   </span>
                 )}
-                <Button size="sm" variant="outline" disabled={!d.reportId}>View Report</Button>
+                {d.fileUrl && (
+                  <Button size="sm" variant="outline" asChild>
+                    <a href={d.fileUrl} target="_blank" rel="noopener noreferrer">
+                      <File className="mr-1 h-3 w-3" /> Document
+                    </a>
+                  </Button>
+                )}
+                <Button size="sm" variant="outline" asChild>
+                  <Link to={`/dealer/report/${d.documentId}`}>View Report</Link>
+                </Button>
                 <Button
                   size="sm"
                   disabled={downloadingDocId === d.documentId}

@@ -19,11 +19,13 @@ import LegalDashboard from "./pages/legal/LegalDashboard.tsx";
 import LegalDocuments from "./pages/legal/LegalDocuments.tsx";
 import LegalRules from "./pages/legal/LegalRules.tsx";
 import LegalReports from "./pages/legal/LegalReports.tsx";
+import LegalReportDetail from "./pages/legal/LegalReportDetail.tsx";
 
 import DealerDashboard from "./pages/dealer/DealerDashboard.tsx";
 import DealerUpload from "./pages/dealer/DealerUpload.tsx";
 import DealerDeals from "./pages/dealer/DealerDeals.tsx";
 import DealerRisk from "./pages/dealer/DealerRisk.tsx";
+import DealerReportDetail from "./pages/dealer/DealerReportDetail.tsx";
 
 import UserDashboard from "./pages/user/UserDashboard.tsx";
 import UserUpload from "./pages/user/UserUpload.tsx";
@@ -62,6 +64,7 @@ const App = () => (
             <Route path="/legal/documents" element={guard(["LEGAL_PRACTITIONER"], <LegalDocuments />)} />
             <Route path="/legal/rules" element={guard(["LEGAL_PRACTITIONER"], <LegalRules />)} />
             <Route path="/legal/reports" element={guard(["LEGAL_PRACTITIONER"], <LegalReports />)} />
+            <Route path="/legal/report/:documentId" element={guard(["LEGAL_PRACTITIONER"], <LegalReportDetail />)} />
 
             {/* Deal Maker */}
             <Route path="/dealer" element={<Navigate to="/dealer/dashboard" replace />} />
@@ -69,6 +72,7 @@ const App = () => (
             <Route path="/dealer/upload" element={guard(["DEAL_MAKER"], <DealerUpload />)} />
             <Route path="/dealer/deals" element={guard(["DEAL_MAKER"], <DealerDeals />)} />
             <Route path="/dealer/risk" element={guard(["DEAL_MAKER"], <DealerRisk />)} />
+            <Route path="/dealer/report/:documentId" element={guard(["DEAL_MAKER"], <DealerReportDetail />)} />
 
             {/* User */}
             <Route path="/user" element={<Navigate to="/user/dashboard" replace />} />
