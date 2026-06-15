@@ -5,6 +5,7 @@ interface AuthContextValue {
   session: AuthSession | null;
   isAuthenticated: boolean;
   role: Role | null;
+  isLoading: boolean;
   login: (email: string, password: string) => Promise<AuthSession>;
   logout: () => void;
 }
@@ -13,9 +14,11 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setSession(getStoredSession());
+    setIsLoading(false);
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -35,10 +38,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       isAuthenticated: !!session,
       role: session?.role ?? null,
+      isLoading,
       login,
       logout,
     }),
-    [session, login, logout]
+    [session, login, logout, isLoading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

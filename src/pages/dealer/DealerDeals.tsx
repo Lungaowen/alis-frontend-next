@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Download } from "lucide-react";
+import { CalendarIcon, Download, Sparkles, Loader2, RefreshCw } from "lucide-react";
 import { PortalLayout } from "@/components/app/PortalLayout";
 import { Spinner, EmptyState, ProgressBar } from "@/components/app/Primitives";
 import { StatusBadge, RiskBadge } from "@/components/app/StatusBadges";
@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { downloadReportPdf, getMyDocuments, type DocumentItem } from "@/lib/alis";
+import { downloadReportPdf, getMyDocuments, triggerAnalysis, getStatus, getReportForDocument, type DocumentItem } from "@/lib/alis";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -20,11 +20,76 @@ export default function DealerDealsPage() {
   const [riskFilter, setRiskFilter] = useState("ALL");
   const [from, setFrom] = useState<Date | undefined>();
   const [to, setTo] = useState<Date | undefined>();
+  const [analyzingId, setAnalyzingId] = useState<number | null>(null);
+  const [downloadingDocId, setDownloadingDocId] = useState<number | null>(null);
 
   useEffect(() => {
     getMyDocuments().then((d) => setDocs(Array.isArray(d) ? d : []))
       .catch((e) => { toast.error(e?.message ?? "Failed to load"); setDocs([]); });
   }, []);
+
+  async function handleReanalyze(docId: number) {
+    setAnalyzingId(docId);
+    try {
+      await triggerAnalysis(docId);
+      toast.success("Analysis triggered successfully");
+      
+      // Poll for analysis completion
+      const pollInterval = setInterval(async () => {
+        try {
+          const status = await getStatus(docId);
+          if (status.reportReady || status.documentStatus === "ANALYZED") {
+            clearInterval(pollInterval);
+            setAnalyzingId(null);
+            // Refresh documents to get updated reportId
+            getMyDocuments().then((d) => setDocs(Array.isArray(d) ? d : []));
+            toast.success("Analysis complete - report ready for download");
+          }
+        } catch (e) {
+          console.error("Polling error:", e);
+        }
+      }, 3000);
+      
+      // Stop polling after 2 minutes to prevent infinite loops
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (analyzingId === docId) {
+          setAnalyzingId(null);
+          toast.error("Analysis timed out - please try again");
+        }
+      }, 120000);
+      
+    } catch (e) {
+      toast.error((e as Error)?.message ?? "Failed to trigger analysis");
+      setAnalyzingId(null);
+    }
+  }
+
+  async function handleDownload(doc: DocumentItem) {
+    setDownloadingDocId(doc.documentId);
+    try {
+      // If reportId exists, use it directly
+      if (doc.reportId) {
+        await downloadReportPdf(doc.reportId, `${doc.title}.pdf`);
+      } else {
+        // Otherwise try to get report by documentId
+        const report = await getReportForDocument(doc.documentId);
+        if (report && report.reportId) {
+          await downloadReportPdf(report.reportId, `${doc.title}.pdf`);
+          // Update the document with the reportId
+          setDocs(prev => prev?.map(d => 
+            d.documentId === doc.documentId ? { ...d, reportId: report.reportId } : d
+          ) ?? null);
+        } else {
+          toast.error("Report not ready yet - please try again or refresh");
+        }
+      }
+    } catch (e) {
+      toast.error((e as Error)?.message ?? "Failed to download report");
+    } finally {
+      setDownloadingDocId(null);
+    }
+  }
 
   const filtered = useMemo(() => {
     if (!docs) return [];
@@ -43,6 +108,15 @@ export default function DealerDealsPage() {
       title="My Documents"
       eyebrow="Deal Maker"
       description="Browse every deal document you've submitted to ALIS."
+      actions={
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => getMyDocuments().then((d) => setDocs(Array.isArray(d) ? d : []))}
+        >
+          <RefreshCw className="mr-1.5 h-4 w-4" /> Refresh
+        </Button>
+      }
     >
       <div className="mb-5 grid gap-3 rounded-lg border border-border bg-card p-4 md:grid-cols-4">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -94,13 +168,29 @@ export default function DealerDealsPage() {
                 </div>
               )}
               <div className="mt-4 flex gap-2">
+                {(d.status?.toUpperCase() === "EXTRACTED" || d.status?.toUpperCase() === "FAILED") && (
+                  <Button
+                    size="sm"
+                    onClick={() => handleReanalyze(d.documentId)}
+                    disabled={analyzingId === d.documentId}
+                  >
+                    {analyzingId === d.documentId ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
+                    {analyzingId === d.documentId ? "Analyzing..." : "Analyze Deal"}
+                  </Button>
+                )}
+                {analyzingId === d.documentId && (
+                  <span className="flex items-center text-xs text-muted-foreground">
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" /> Analysis in progress...
+                  </span>
+                )}
                 <Button size="sm" variant="outline" disabled={!d.reportId}>View Report</Button>
                 <Button
                   size="sm"
-                  disabled={!d.reportId}
-                  onClick={() => d.reportId && downloadReportPdf(d.reportId, `${d.title}.pdf`)}
+                  disabled={downloadingDocId === d.documentId}
+                  onClick={() => handleDownload(d)}
                 >
-                  <Download className="mr-1 h-3 w-3" /> Download
+                  {downloadingDocId === d.documentId ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Download className="mr-1 h-3 w-3" />}
+                  {downloadingDocId === d.documentId ? "Downloading..." : "Download"}
                 </Button>
               </div>
             </div>

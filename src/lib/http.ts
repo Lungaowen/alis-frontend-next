@@ -46,14 +46,18 @@ http.interceptors.response.use(
     const status = error.response?.status ?? 0;
     const data = error.response?.data;
     if (status === 401 || status === 403) {
-      // Per assessment rubric: expired/invalid token (401) AND forbidden (403)
-      // both clear session and redirect to login with an "expired" message.
-      storeSession(null);
-      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
-        try {
-          sessionStorage.setItem("alis.loginMessage", "Session expired, please log in again.");
-        } catch { /* ignore */ }
-        window.location.assign("/login");
+      // Only clear session if we actually have a session stored
+      const currentSession = getStoredSession();
+      if (currentSession) {
+        // Per assessment rubric: expired/invalid token (401) AND forbidden (403)
+        // both clear session and redirect to login with an "expired" message.
+        storeSession(null);
+        if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+          try {
+            sessionStorage.setItem("alis.loginMessage", "Session expired, please log in again.");
+          } catch { /* ignore */ }
+          window.location.assign("/login");
+        }
       }
       return Promise.reject(
         new AlisApiError(status, status === 401

@@ -77,11 +77,11 @@ const App = () => (
             <Route path="/user/documents" element={guard(["USER"], <UserDocuments />)} />
             <Route path="/user/reports" element={guard(["USER"], <UserReports />)} />
 
-            {/* Global search — any authenticated role */}
+            {/* Global search — admin, legal, and user roles only */}
             <Route
               path="/search"
               element={guard(
-                ["ADMIN", "LEGAL_PRACTITIONER", "DEAL_MAKER", "USER"],
+                ["ADMIN", "LEGAL_PRACTITIONER", "USER"],
                 <SearchPage />
               )}
             />

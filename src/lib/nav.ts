@@ -45,7 +45,6 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { to: "/dealer/upload", label: "Upload & Analyze", iconName: "UploadCloud" },
     { to: "/dealer/deals", label: "My Deals", iconName: "Briefcase" },
     { to: "/dealer/risk", label: "Risk Summary", iconName: "ShieldAlert" },
-    SEARCH_ITEM,
   ],
   USER: [
     { to: "/user/dashboard", label: "Home", iconName: "Home" },

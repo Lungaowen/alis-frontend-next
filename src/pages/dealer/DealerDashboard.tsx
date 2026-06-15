@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { UploadCloud, FileText } from "lucide-react";
+import { UploadCloud, FileText, Sparkles } from "lucide-react";
 import { PortalLayout } from "@/components/app/PortalLayout";
 import { StatCard, Spinner, EmptyState, ProgressBar } from "@/components/app/Primitives";
 import { StatusBadge, RiskBadge } from "@/components/app/StatusBadges";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
+import { UploadAndPoll } from "@/components/app/UploadAndPoll";
 import { getMyDocuments, type DocumentItem } from "@/lib/alis";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -33,8 +37,17 @@ export default function DealerDashboardPage() {
       description={`Welcome, ${session?.fullName ?? ""} — ${(session as { companyName?: string } | null)?.companyName ?? "Independent"}.`}
       actions={
         <div className="flex gap-2">
-          <Button asChild><Link to="/dealer/upload"><UploadCloud className="mr-1.5 h-4 w-4" /> Upload New</Link></Button>
-          <Button asChild variant="outline"><Link to="/dealer/risk"><FileText className="mr-1.5 h-4 w-4" /> Latest Report</Link></Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button><Sparkles className="mr-1.5 h-4 w-4" /> Quick Analysis</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader><DialogTitle>Upload Deal Document</DialogTitle></DialogHeader>
+              <UploadAndPoll variant="compact" showReadiness />
+            </DialogContent>
+          </Dialog>
+          <Button asChild variant="outline"><Link to="/dealer/upload"><UploadCloud className="mr-1.5 h-4 w-4" /> Full Upload</Link></Button>
+          <Button asChild variant="outline"><Link to="/dealer/risk"><FileText className="mr-1.5 h-4 w-4" /> Risk Summary</Link></Button>
         </div>
       }
     >
