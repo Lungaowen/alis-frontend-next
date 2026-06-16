@@ -7,6 +7,7 @@ import { pGet, pPost, pDelete, pDownload, pythonApi } from "./pythonApi";
 import { jGet, jPost, jDelete, javaApi } from "./javaApi";
 import { getStoredSession } from "./auth";
 import axios from "axios";
+import { toast } from "sonner";
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
 export type DocumentStatus =
@@ -447,6 +448,53 @@ export const getDetailedReport = async (documentId: number): Promise<DetailedRep
   return response.data;
 };
 
+// CSV export utility for admin reports
+export function exportToCSV<T extends Record<string, any>>(
+  data: T[],
+  filename: string,
+  headers: { key: keyof T; label: string }[]
+) {
+  if (data.length === 0) {
+    toast.error("No data to export");
+    return;
+  }
+
+  // Create CSV header row
+  const headerRow = headers.map(h => h.label).join(',');
+
+  // Create CSV data rows
+  const dataRows = data.map(row =>
+    headers.map(h => {
+      const value = row[h.key];
+      // Handle null/undefined, escape quotes and commas
+      if (value == null) return '';
+      const stringValue = String(value);
+      // Escape quotes by doubling them and wrap in quotes if contains comma or quote
+      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    }).join(',')
+  );
+
+  // Combine header and data
+  const csvContent = [headerRow, ...dataRows].join('\n');
+
+  // Create blob and download
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `${filename}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  toast.success(`Exported ${data.length} records to CSV`);
+}
+
 export const getDocumentReports = async (documentId: number): Promise<ReportInfo[]> => {
   try {
     const report = await httpGet<ReportInfo>(`/api/client/documents/${documentId}/report`);
@@ -455,6 +503,44 @@ export const getDocumentReports = async (documentId: number): Promise<ReportInfo
     if (err?.response?.status === 404) return [];
     throw err;
   }
+};
+
+export interface ClientProfile {
+  clientId: number;
+  fullName: string;
+  email: string;
+  username: string;
+  role: Role;
+  createdAt: string;
+  active: boolean;
+  deactivatedAt: string | null;
+  barNumber: string | null;
+  lawFirm: string | null;
+  companyName: string | null;
+  dealSpecialty: string | null;
+}
+
+export const getClientProfile = async (): Promise<ClientProfile> => {
+  return httpGet<ClientProfile>("/api/client/profile");
+};
+
+export interface ResetPasswordResponse {
+  message: string;
+  client_id: number;
+  email: string;
+  full_name: string;
+}
+
+export const resetPassword = async (clientId?: number, email?: string, newPassword?: string): Promise<ResetPasswordResponse> => {
+  const params = new URLSearchParams();
+  if (clientId) params.append("clientId", clientId.toString());
+  if (email) params.append("email", email);
+
+  const response = await axios.patch<ResetPasswordResponse>(
+    `https://pvgibvnszcnewjtxzbvw.supabase.co/functions/v1/reset-password?${params.toString()}`,
+    { newPassword }
+  );
+  return response.data;
 };
 
 export const getMyReports = () => httpGet<ReportInfo[]>("/api/client/reports");

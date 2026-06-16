@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, ChevronLeft, ChevronRight, Loader2, Sparkles, Trash2 } from "lucide-react";
+import { CalendarIcon, ChevronLeft, ChevronRight, Loader2, Sparkles, Trash2, Download } from "lucide-react";
 import { PortalLayout } from "@/components/app/PortalLayout";
 import { Spinner, EmptyState } from "@/components/app/Primitives";
 import { RiskBadge } from "@/components/app/StatusBadges";
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   adminDeleteClient, adminFilterClients, adminListClients, adminUpdateClient,
-  adminClientsByRole, getResult, type ClientRecord, type RiskLevel,
+  adminClientsByRole, getResult, exportToCSV, type ClientRecord, type RiskLevel,
 } from "@/lib/alis";
 import type { Role } from "@/lib/auth";
 import { toast } from "sonner";
@@ -104,6 +104,19 @@ export default function AdminClientsPage() {
     load();
   }
 
+  function downloadClientsCSV() {
+    const headers = [
+      { key: 'clientId' as keyof ClientRecord, label: 'Client ID' },
+      { key: 'fullName' as keyof ClientRecord, label: 'Full Name' },
+      { key: 'email' as keyof ClientRecord, label: 'Email' },
+      { key: 'role' as keyof ClientRecord, label: 'Role' },
+      { key: 'registeredAt' as keyof ClientRecord, label: 'Registered Date' },
+      { key: 'documentCount' as keyof ClientRecord, label: 'Document Count' },
+      { key: 'active' as keyof ClientRecord, label: 'Active' },
+    ];
+    exportToCSV(clients, `clients-report-${format(new Date(), 'yyyy-MM-dd')}`, headers);
+  }
+
   async function fetchRisk(c: ClientRecord) {
     setRiskMap((m) => ({ ...m, [c.clientId]: "LOADING" }));
     try {
@@ -121,6 +134,11 @@ export default function AdminClientsPage() {
       title="Client Management"
       eyebrow="Administration"
       description="Search, filter, edit, and audit every client in the platform."
+      actions={
+        <Button variant="outline" onClick={downloadClientsCSV} disabled={clients.length === 0}>
+          <Download className="mr-1.5 h-4 w-4" /> Export CSV
+        </Button>
+      }
     >
       {/* Filter bar */}
       <div className="mb-5 grid gap-3 rounded-lg border border-border bg-card p-4 md:grid-cols-5">

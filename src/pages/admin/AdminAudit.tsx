@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PortalLayout } from "@/components/app/PortalLayout";
 import { Spinner, EmptyState } from "@/components/app/Primitives";
@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { adminClientAudit, adminRecentAudit, type AuditEntry } from "@/lib/alis";
+import { adminClientAudit, adminRecentAudit, exportToCSV, type AuditEntry } from "@/lib/alis";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -61,11 +61,29 @@ export default function AdminAuditPage() {
     }
   }
 
+  function downloadAuditCSV() {
+    const headers = [
+      { key: 'logId' as keyof AuditEntry, label: 'Log ID' },
+      { key: 'timestamp' as keyof AuditEntry, label: 'Timestamp' },
+      { key: 'actionType' as keyof AuditEntry, label: 'Action Type' },
+      { key: 'description' as keyof AuditEntry, label: 'Description' },
+      { key: 'clientId' as keyof AuditEntry, label: 'Client ID' },
+      { key: 'documentId' as keyof AuditEntry, label: 'Document ID' },
+      { key: 'ipAddress' as keyof AuditEntry, label: 'IP Address' },
+    ];
+    exportToCSV(filtered, `audit-log-${format(new Date(), 'yyyy-MM-dd')}`, headers);
+  }
+
   return (
     <PortalLayout
       title="Audit Log Explorer"
       eyebrow="Administration"
       description="Inspect every meaningful action taken across ALIS."
+      actions={
+        <Button variant="outline" onClick={downloadAuditCSV} disabled={filtered.length === 0}>
+          <Download className="mr-1.5 h-4 w-4" /> Export CSV
+        </Button>
+      }
     >
       <div className="mb-5 grid gap-3 rounded-lg border border-border bg-card p-4 lg:grid-cols-6">
         <Input className="lg:col-span-2" placeholder="Search description or action" value={search} onChange={(e) => setSearch(e.target.value)} />

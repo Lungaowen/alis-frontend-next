@@ -3,6 +3,8 @@ import { Scale, LogOut } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { ApiBaseDialog } from "@/components/ApiBaseDialog";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { MobileNav } from "@/components/MobileNav";
 
 export function SiteHeader() {
   const { isAuthenticated, logout, session } = useAuth();
@@ -12,7 +14,9 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 glass">
       <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="group flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
+          {isAuthenticated && <MobileNav />}
+          <Link to="/" className="group flex items-center gap-2.5">
           <span className="grid h-9 w-9 place-items-center rounded-md bg-gradient-ink text-primary-foreground shadow-soft transition-transform group-hover:rotate-[-6deg]">
             <Scale className="h-4.5 w-4.5" strokeWidth={1.75} />
           </span>
@@ -23,6 +27,7 @@ export function SiteHeader() {
             Legal Intelligence
           </span>
         </Link>
+        </div>
 
         <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
           {!onApp && (
@@ -35,6 +40,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <ApiBaseDialog />
           {isAuthenticated ? (
             <>

@@ -24,6 +24,7 @@ export const ROLE_THEME: Record<Role, { tone: string; accent: string; sidebar: s
 };
 
 const SEARCH_ITEM: NavItem = { to: "/search", label: "Search", iconName: "Search" };
+const PROFILE_ITEM: NavItem = { to: "/profile", label: "My Profile", iconName: "User" };
 
 export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   ADMIN: [
@@ -32,6 +33,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { to: "/admin/audit", label: "Audit Log", iconName: "ScrollText" },
     { to: "/admin/reports", label: "Reports", iconName: "BarChart3" },
     SEARCH_ITEM,
+    PROFILE_ITEM,
   ],
   LEGAL_PRACTITIONER: [
     { to: "/legal/dashboard", label: "Dashboard", iconName: "Gauge" },
@@ -39,12 +41,14 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { to: "/legal/rules", label: "Rules Workspace", iconName: "Gavel" },
     { to: "/legal/reports", label: "Compliance Reports", iconName: "ClipboardCheck" },
     SEARCH_ITEM,
+    PROFILE_ITEM,
   ],
   DEAL_MAKER: [
     { to: "/dealer/dashboard", label: "Overview", iconName: "Gauge" },
     { to: "/dealer/upload", label: "Upload & Analyze", iconName: "UploadCloud" },
     { to: "/dealer/deals", label: "My Deals", iconName: "Briefcase" },
     { to: "/dealer/risk", label: "Risk Summary", iconName: "ShieldAlert" },
+    PROFILE_ITEM,
   ],
   USER: [
     { to: "/user/dashboard", label: "Home", iconName: "Home" },
@@ -52,6 +56,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { to: "/user/documents", label: "My Documents", iconName: "FileText" },
     { to: "/user/reports", label: "My Reports", iconName: "ClipboardCheck" },
     SEARCH_ITEM,
+    PROFILE_ITEM,
   ],
 };
 

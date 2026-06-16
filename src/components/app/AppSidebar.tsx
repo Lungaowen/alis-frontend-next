@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { FileText, Gauge, Gavel, Upload } from "lucide-react";
+import { FileText, Gauge, Gavel, Upload, User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
@@ -8,6 +8,7 @@ const NAV = [
   { to: "/dashboard/upload", label: "Upload & analyze", icon: Upload, roles: ["USER", "LEGAL_PRACTITIONER", "DEAL_MAKER"] },
   { to: "/dashboard/documents", label: "My documents", icon: FileText, roles: ["USER", "LEGAL_PRACTITIONER", "DEAL_MAKER"] },
   { to: "/dashboard/rules", label: "Rules workspace", icon: Gavel, roles: ["LEGAL_PRACTITIONER"] },
+  { to: "/profile", label: "My Profile", icon: User, roles: ["USER", "LEGAL_PRACTITIONER", "DEAL_MAKER", "ADMIN"] },
 ] as const;
 
 export function AppSidebar() {

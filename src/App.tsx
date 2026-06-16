@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index.tsx";
 import LoginPage from "./pages/Login.tsx";
@@ -32,6 +33,9 @@ import UserUpload from "./pages/user/UserUpload.tsx";
 import UserDocuments from "./pages/user/UserDocuments.tsx";
 import UserReports from "./pages/user/UserReports.tsx";
 import SearchPage from "./pages/Search.tsx";
+import ProfilePage from "./pages/Profile.tsx";
+import ForgotPasswordPage from "./pages/ForgotPassword.tsx";
+import ResetPasswordPage from "./pages/ResetPassword.tsx";
 
 
 const queryClient = new QueryClient();
@@ -41,10 +45,11 @@ const guard = (allow: ("ADMIN" | "USER" | "LEGAL_PRACTITIONER" | "DEAL_MAKER")[]
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
@@ -90,15 +95,28 @@ const App = () => (
               )}
             />
 
+            {/* Profile — all authenticated users */}
+            <Route
+              path="/profile"
+              element={guard(
+                ["ADMIN", "USER", "LEGAL_PRACTITIONER", "DEAL_MAKER"],
+                <ProfilePage />
+              )}
+            />
 
             {/* Legacy aliases — redirect old /dashboard to role home */}
             <Route path="/dashboard/*" element={<Navigate to="/login" replace />} />
+
+            {/* Password reset — public routes */}
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
