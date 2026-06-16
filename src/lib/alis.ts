@@ -8,6 +8,7 @@ import { jGet, jPost, jDelete, javaApi } from "./javaApi";
 import { getStoredSession } from "./auth";
 import axios from "axios";
 import { toast } from "sonner";
+import { createClient } from '@supabase/supabase-js';
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
 export type DocumentStatus =
@@ -239,6 +240,364 @@ export const getMyDocuments = () => jGet<DocumentItem[]>("/api/client/documents"
 export const getDocument = (id: number) => jGet<DocumentItem>(`/api/client/documents/${id}`);
 export const deleteDocument = (id: number) => jDelete(`/api/client/documents/${id}`);
 
+// ====================== WORKER API ======================
+const WORKER_URL = import.meta.env.VITE_WORKER_URL || "https://filemeta-worker.lungaowen14.workers.dev";
+
+// ====================== DIRECT DATABASE CONNECTION ======================
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
+let supabaseClient: any = null;
+
+function getSupabaseClient() {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn('Supabase credentials not set');
+    return null;
+  }
+
+  if (!supabaseClient) {
+    supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  }
+
+  return supabaseClient;
+}
+
+export interface FileMetadataInput {
+  document_id: number;
+  size: number;
+  hash: string;
+  mime_type: string;
+}
+
+export interface DocumentChunkInput {
+  chunk_index: number;
+  chunk_text: string;
+  token_count?: number;
+}
+
+export interface DocumentContentInput {
+  document_id: number;
+  extracted_text: string;
+  embedding_vector?: string;
+}
+
+export interface AuditLogInput {
+  admin_id?: number;
+  client_id?: number;
+  document_id?: number;
+  action_type: 'LOGIN' | 'LOGOUT' | 'UPLOAD_DOCUMENT' | 'ANALYSIS_RUN' | 'USER_CREATED' | 'USER_UPDATED' | 'USER_DELETED';
+  description?: string;
+  ip_address?: string;
+}
+
+export async function insertFileMetadata(data: FileMetadataInput): Promise<any> {
+  const response = await fetch(`${WORKER_URL}/api/file-metadata`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to insert file metadata');
+  }
+
+  return response.json();
+}
+
+export async function updateFileMetadata(document_id: number, updates: Partial<FileMetadataInput>): Promise<any> {
+  const response = await fetch(`${WORKER_URL}/api/file-metadata`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ document_id, ...updates }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to update file metadata');
+  }
+
+  return response.json();
+}
+
+export async function insertDocumentChunks(document_id: number, chunks: DocumentChunkInput[]): Promise<any> {
+  const response = await fetch(`${WORKER_URL}/api/document-chunks`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ document_id, chunks }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to insert document chunks');
+  }
+
+  return response.json();
+}
+
+export async function updateDocumentChunks(document_id: number, chunks: DocumentChunkInput[]): Promise<any> {
+  const response = await fetch(`${WORKER_URL}/api/document-chunks`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ document_id, chunks }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to update document chunks');
+  }
+
+  return response.json();
+}
+
+export async function insertDocumentContent(data: DocumentContentInput): Promise<any> {
+  const response = await fetch(`${WORKER_URL}/api/document-content`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to insert document content');
+  }
+
+  return response.json();
+}
+
+export async function updateDocumentContent(document_id: number, updates: Partial<DocumentContentInput>): Promise<any> {
+  const response = await fetch(`${WORKER_URL}/api/document-content`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ document_id, ...updates }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to update document content');
+  }
+
+  return response.json();
+}
+
+// Helper function to calculate file hash
+async function calculateFileHash(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Helper function to split text into chunks
+function splitIntoChunks(text: string, chunkSize: number): string[] {
+  const chunks: string[] = [];
+  for (let i = 0; i < text.length; i += chunkSize) {
+    chunks.push(text.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
+// Helper function to estimate tokens
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+// Client-side PDF text extraction
+async function extractTextFromPDF(file: File): Promise<string> {
+  const pdfjsLib = await import('pdfjs-dist');
+  
+  // Set worker source to jsdelivr CDN (more reliable)
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+  
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  
+  let fullText = '';
+  
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items.map((item: any) => item.str).join(' ');
+    fullText += pageText + '\n';
+  }
+  
+  return fullText.trim();
+}
+
+// Function to insert document content after text extraction
+export async function handleDocumentContentInsertion(documentId: number, extractedText: string, embeddingVector?: string): Promise<void> {
+  try {
+    await insertDocumentContent({
+      document_id: documentId,
+      extracted_text: extractedText,
+      embedding_vector: embeddingVector,
+    });
+  } catch (error) {
+    console.error("Failed to insert document content:", error);
+    // Don't fail the process if content insertion fails
+  }
+}
+
+// ====================== DIRECT DATABASE FUNCTIONS ======================
+export async function insertFileMetadataDirect(data: FileMetadataInput): Promise<any> {
+  const client = getSupabaseClient();
+  if (!client) {
+    console.warn('Supabase client not available, falling back to worker');
+    return insertFileMetadata(data);
+  }
+
+  try {
+    const result = await client
+      .from('file_metadata')
+      .upsert({
+        document_id: data.document_id,
+        size: data.size,
+        hash: data.hash,
+        mime_type: data.mime_type,
+      }, {
+        onConflict: 'document_id'
+      })
+      .select()
+      .single();
+    
+    return { success: true, data: result.data };
+  } catch (error) {
+    console.error("Direct database insert failed:", error);
+    throw error;
+  }
+}
+
+export async function insertDocumentContentDirect(data: DocumentContentInput): Promise<any> {
+  const client = getSupabaseClient();
+  if (!client) {
+    console.warn('Supabase client not available, falling back to worker');
+    return insertDocumentContent(data);
+  }
+
+  try {
+    const result = await client
+      .from('document_content')
+      .upsert({
+        document_id: data.document_id,
+        extracted_text: data.extracted_text,
+        embedding_vector: data.embedding_vector,
+      }, {
+        onConflict: 'document_id'
+      })
+      .select()
+      .single();
+    
+    return { success: true, data: result.data };
+  } catch (error) {
+    console.error("Direct database insert failed:", error);
+    throw error;
+  }
+}
+
+export async function insertDocumentChunksDirect(document_id: number, chunks: DocumentChunkInput[]): Promise<any> {
+  const client = getSupabaseClient();
+  if (!client) {
+    console.warn('Supabase client not available, falling back to worker');
+    return insertDocumentChunks(document_id, chunks);
+  }
+
+  try {
+    const rows = chunks
+      .filter(c => c.chunk_index !== undefined && c.chunk_text)
+      .map(c => ({
+        document_id,
+        chunk_index: c.chunk_index,
+        chunk_text: c.chunk_text,
+        token_count: c.token_count ?? null,
+      }));
+
+    if (rows.length === 0) {
+      return { success: true, count: 0, data: [] };
+    }
+
+    const result = await client
+      .from('document_chunk')
+      .insert(rows)
+      .select();
+    
+    return { success: true, count: result.data?.length || 0, data: result.data };
+  } catch (error) {
+    console.error("Direct database insert failed:", error);
+    throw error;
+  }
+}
+
+export async function insertAuditLogDirect(data: AuditLogInput): Promise<any> {
+  const client = getSupabaseClient();
+  if (!client) {
+    console.warn('Supabase client not available, skipping audit log');
+    return null;
+  }
+
+  try {
+    const result = await client
+      .from('audit_log')
+      .insert({
+        admin_id: data.admin_id,
+        client_id: data.client_id,
+        document_id: data.document_id,
+        action_type: data.action_type,
+        description: data.description,
+        ip_address: data.ip_address,
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+    
+    return { success: true, data: result.data };
+  } catch (error) {
+    console.error("Audit log insert failed:", error);
+    throw error;
+  }
+}
+
+// ====================== REALTIME SUBSCRIPTIONS ======================
+export function subscribeToAuditLog(callback: (payload: any) => void) {
+  const client = getSupabaseClient();
+  if (!client) {
+    console.warn('Supabase client not available, cannot subscribe to audit log');
+    return null;
+  }
+
+  const channel = client
+    .channel('audit_log_changes')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'audit_log'
+      },
+      (payload) => callback(payload)
+    )
+    .subscribe();
+
+  return channel;
+}
+
+export function unsubscribeFromAuditLog(channel: any) {
+  if (channel) {
+    channel.unsubscribe();
+  }
+}
+
 // ====================== UPLOAD (Fixed 415 Error) ======================
 export async function uploadDocument(
   file: File,
@@ -293,9 +652,55 @@ export async function uploadDocument(
     timeout: 180000, // 3 minutes for large files
   });
 
+  const finalDocumentId = response.data.document_id || documentId;
+
+  // Insert file metadata via direct database connection (fallback to worker)
+  try {
+    const hash = await calculateFileHash(file);
+    await insertFileMetadataDirect({
+      document_id: finalDocumentId,
+      size: file.size,
+      hash: hash,
+      mime_type: file.type,
+    });
+  } catch (error) {
+    console.error("Failed to insert file metadata:", error);
+    // Don't fail the upload if metadata insertion fails
+  }
+
+  // Extract text from PDF and insert into document_content via direct database
+  if (file.type === 'application/pdf') {
+    try {
+      const extractedText = await extractTextFromPDF(file);
+      if (extractedText) {
+        await insertDocumentContentDirect({
+          document_id: finalDocumentId,
+          extracted_text: extractedText,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to extract PDF text:", error);
+      // Don't fail the upload if text extraction fails
+    }
+  }
+
+  // Log upload action to audit_log
+  try {
+    await insertAuditLogDirect({
+      client_id: clientId,
+      document_id: finalDocumentId,
+      action_type: 'UPLOAD_DOCUMENT',
+      description: `Uploaded document: ${opts.title || file.name}`,
+      ip_address: 'client-side', // Can't get real IP from browser
+    });
+  } catch (error) {
+    console.error("Failed to insert audit log:", error);
+    // Don't fail the upload if audit log fails
+  }
+
   return {
     message: response.data.message ?? "QUEUED",
-    documentId: response.data.document_id || documentId,
+    documentId: finalDocumentId,
     title: opts.title || file.name,
     status: response.data.status as DocumentStatus,
   };
@@ -446,7 +851,28 @@ export const getDetailedReport = async (documentId: number): Promise<DetailedRep
   const response = await axios.get<DetailedReport>(
     `https://102-37-137-111.nip.io/api/analysis/report/${documentId}`
   );
-  return response.data;
+  
+  const report = response.data;
+  
+  // Extract text from report clauses and insert into document_content via direct database
+  if (report.report_summary_json?.clauses && Array.isArray(report.report_summary_json.clauses)) {
+    const extractedText = report.report_summary_json.clauses
+      .map(clause => clause.text)
+      .filter(text => text && text.trim())
+      .join('\n\n');
+    
+    if (extractedText) {
+      // Insert document content via direct database connection
+      insertDocumentContentDirect({
+        document_id: documentId,
+        extracted_text: extractedText,
+      }).catch(error => {
+        console.error("Failed to insert document content:", error);
+      });
+    }
+  }
+  
+  return report;
 };
 
 // CSV export utility for admin reports
