@@ -9,6 +9,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { UploadAndPoll } from "@/components/app/UploadAndPoll";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { getMyDocuments, type DocumentItem } from "@/lib/alis";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -37,6 +38,7 @@ export default function DealerDashboardPage() {
       description={`Welcome, ${session?.fullName ?? ""} — ${(session as { companyName?: string } | null)?.companyName ?? "Independent"}.`}
       actions={
         <div className="flex gap-2">
+          <ThemeToggle />
           <Dialog>
             <DialogTrigger asChild>
               <Button><Sparkles className="mr-1.5 h-4 w-4" /> Quick Analysis</Button>
@@ -51,7 +53,7 @@ export default function DealerDashboardPage() {
         </div>
       }
     >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="animate-slide-in-right grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Documents Submitted" value={submitted} />
         <StatCard label="Reports Ready" value={ready} tone="accent" />
         <StatCard label="High Risk Deals" value={high} tone="destructive" />

@@ -9,6 +9,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { UploadAndPoll } from "@/components/app/UploadAndPoll";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { getMyDocuments, type DocumentItem } from "@/lib/alis";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -37,18 +38,21 @@ export default function LegalDashboardPage() {
       eyebrow="Practitioner"
       description={`Welcome back, ${session?.fullName ?? ""}.`}
       actions={
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button><UploadCloud className="mr-1.5 h-4 w-4" /> Quick upload</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader><DialogTitle>Upload a document</DialogTitle></DialogHeader>
-            <UploadAndPoll variant="compact" />
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <ThemeToggle />
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button><UploadCloud className="mr-1.5 h-4 w-4" /> Quick upload</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader><DialogTitle>Upload a document</DialogTitle></DialogHeader>
+              <UploadAndPoll variant="compact" />
+            </DialogContent>
+          </Dialog>
+        </div>
       }
     >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="animate-slide-in-right grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="My Documents" value={total} />
         <StatCard label="Analyzed" value={analyzed} tone="accent" />
         <StatCard label="Pending" value={pending} tone="gold" />

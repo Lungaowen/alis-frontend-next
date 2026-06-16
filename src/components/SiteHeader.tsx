@@ -15,7 +15,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-border/60 glass">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-2">
-          {isAuthenticated && <MobileNav />}
+          <MobileNav />
           <Link to="/" className="group flex items-center gap-2.5">
           <span className="grid h-9 w-9 place-items-center rounded-md bg-gradient-ink text-primary-foreground shadow-soft transition-transform group-hover:rotate-[-6deg]">
             <Scale className="h-4.5 w-4.5" strokeWidth={1.75} />

@@ -4,6 +4,7 @@ import {
 } from "recharts";
 import { PortalLayout } from "@/components/app/PortalLayout";
 import { StatCard, Spinner, EmptyState } from "@/components/app/Primitives";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   adminDashboard, adminRecentAudit, type AdminDashboardData, type AuditEntry,
 } from "@/lib/alis";
@@ -48,11 +49,12 @@ export default function AdminDashboardPage() {
       title="Admin Dashboard"
       eyebrow="Operations"
       description="Live platform metrics for clients, documents and analyses."
+      actions={<ThemeToggle />}
     >
       {loading ? (
         <Spinner label="Loading dashboard…" />
       ) : (
-        <div className="space-y-6">
+        <div className="animate-slide-in-right space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="Total Clients" value={data?.stats?.totalClients ?? 0} />
             <StatCard label="Total Documents" value={data?.stats?.totalDocuments ?? 0} />
