@@ -16,7 +16,7 @@ import { adminClientAudit, adminRecentAudit, exportToCSV, type AuditEntry } from
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const ACTIONS = ["ALL", "UPLOAD", "ANALYSIS_RUN", "DOCUMENT_VIEWED", "LOGIN"];
+const ACTIONS = ["ALL", "USER_CREATED", "UPLOAD_DOCUMENT", "ANALYSIS_RUN", "DOCUMENT_VIEWED", "LOGIN"];
 
 export default function AdminAuditPage() {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
@@ -39,7 +39,7 @@ export default function AdminAuditPage() {
     return entries.filter((e) => {
       if (action !== "ALL" && e.actionType !== action) return false;
       if (search && !`${e.description} ${e.actionType}`.toLowerCase().includes(search.toLowerCase())) return false;
-      const ts = new Date(e.timestamp).getTime();
+      const ts = new Date(e.createdAt).getTime();
       if (from && ts < from.getTime()) return false;
       if (to && ts > to.getTime() + 86_400_000) return false;
       return true;
@@ -64,7 +64,7 @@ export default function AdminAuditPage() {
   function downloadAuditCSV() {
     const headers = [
       { key: 'logId' as keyof AuditEntry, label: 'Log ID' },
-      { key: 'timestamp' as keyof AuditEntry, label: 'Timestamp' },
+      { key: 'createdAt' as keyof AuditEntry, label: 'Timestamp' },
       { key: 'actionType' as keyof AuditEntry, label: 'Action Type' },
       { key: 'description' as keyof AuditEntry, label: 'Description' },
       { key: 'clientId' as keyof AuditEntry, label: 'Client ID' },
@@ -123,7 +123,7 @@ export default function AdminAuditPage() {
               {filtered.map((e) => (
                 <tr key={e.logId} className="border-t border-border">
                   <td className="px-4 py-3 text-mono text-xs text-muted-foreground">#{e.logId}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{new Date(e.timestamp).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{new Date(e.createdAt).toLocaleString()}</td>
                   <td className="px-4 py-3">
                     <Badge variant="outline" className="text-mono text-[10px] uppercase tracking-[0.16em]">{e.actionType}</Badge>
                   </td>

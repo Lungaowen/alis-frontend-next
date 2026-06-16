@@ -21,37 +21,17 @@ const COLORS = ["hsl(var(--accent))", "hsl(var(--primary))", "hsl(var(--gold))",
 export default function AdminReportsPage() {
   return (
     <PortalLayout title="Platform Reports" eyebrow="Analytics" description="Aggregate insights across ALIS.">
-      <Tabs defaultValue="summary" className="w-full">
+      <Tabs defaultValue="role" className="w-full">
         <TabsList>
-          <TabsTrigger value="summary">Summary</TabsTrigger>
           <TabsTrigger value="role">Role Distribution</TabsTrigger>
           <TabsTrigger value="trend">Registration Trend</TabsTrigger>
           <TabsTrigger value="top">Top Uploaders</TabsTrigger>
         </TabsList>
-        <TabsContent value="summary"><SummaryTab /></TabsContent>
         <TabsContent value="role"><RoleTab /></TabsContent>
         <TabsContent value="trend"><TrendTab /></TabsContent>
         <TabsContent value="top"><TopTab /></TabsContent>
       </Tabs>
     </PortalLayout>
-  );
-}
-
-function SummaryTab() {
-  const [data, setData] = useState<Record<string, number | string> | null>(null);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    adminReportSummary().then(setData).catch((e) => toast.error(e?.message ?? "Failed to load summary")).finally(() => setLoading(false));
-  }, []);
-  if (loading) return <Spinner label="Loading summary…" />;
-  const entries = data ? Object.entries(data) : [];
-  if (entries.length === 0) return <EmptyState title="No summary data" />;
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {entries.map(([k, v]) => (
-        <StatCard key={k} label={k.replace(/([A-Z])/g, " $1").trim()} value={String(v)} />
-      ))}
-    </div>
   );
 }
 

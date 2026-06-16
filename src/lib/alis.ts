@@ -161,10 +161,11 @@ export interface AdminDashboardData {
 
 export interface AuditEntry {
   logId: number;
-  timestamp: string;
+  createdAt: string;
   actionType: string;
   description: string;
   clientId?: number;
+  adminId?: number;
   documentId?: number;
   ipAddress?: string;
   clientName?: string;
@@ -587,6 +588,35 @@ export const adminRoleDistribution = async (): Promise<RoleDistributionRow[]> =>
 
 export const adminTopUploaders = (page = 0, size = 10) =>
   jGet<PaginatedTopUploadersResponse>(`/api/admin/clients/reports/top-uploaders?page=${page}&size=${size}`);
+
+// ====================== FILE DOWNLOAD ======================
+export async function downloadFile(fileUrl: string, filename?: string): Promise<void> {
+  const token = localStorage.getItem("alis_token");
+  
+  try {
+    const response = await axios.get(fileUrl, {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+      responseType: "blob",
+    });
+
+    const blob = new Blob([response.data]);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename || fileUrl.split("/").pop() || "download";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Download failed:", error);
+    toast.error("Failed to download file. Please try again.");
+    throw error;
+  }
+}
+
 // ====================== GLOBAL SEARCH ======================
 export interface DocumentSearchHit {
   documentId: number;
@@ -594,6 +624,7 @@ export interface DocumentSearchHit {
   status: DocumentStatus;
   uploadedAt: string;
   clientId: number;
+  fileUrl?: string;
   rank?: number;
 }
 
@@ -606,6 +637,7 @@ export interface ReportSearchHit {
   documentId: number;
   documentTitle?: string;
   clientId: number;
+  fileUrl?: string;
   generatedAt?: string;
   rank?: number;
 }
@@ -619,6 +651,7 @@ export interface ClauseSearchHit {
   documentId: number;
   documentTitle?: string;
   clientId: number;
+  fileUrl?: string;
   rank?: number;
 }
 
@@ -655,6 +688,7 @@ export const searchGlobal = async (q: string, page = 0, pageSize = 10): Promise<
             status: row.status || "ANALYZED",
             uploadedAt: row.uploaded_at || new Date().toISOString(),
             clientId: row.client_id || 0,
+            fileUrl: row.file_url || (row.document && row.document.file_url) || undefined,
           });
         }
       } else if (result.type === "report" && Array.isArray(result.rows)) {
@@ -668,6 +702,7 @@ export const searchGlobal = async (q: string, page = 0, pageSize = 10): Promise<
             documentId: row.document_id || 0,
             documentTitle: row.document_title,
             clientId: row.client_id || 0,
+            fileUrl: row.file_url || (row.document && row.document.file_url) || undefined,
             generatedAt: row.generated_at,
           });
         }
@@ -682,6 +717,7 @@ export const searchGlobal = async (q: string, page = 0, pageSize = 10): Promise<
             documentId: row.document_id || 0,
             documentTitle: row.document_title,
             clientId: row.client_id || 0,
+            fileUrl: row.file_url || (row.document && row.document.file_url) || undefined,
           });
         }
       }

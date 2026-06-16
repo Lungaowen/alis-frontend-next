@@ -33,7 +33,6 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { to: "/admin/audit", label: "Audit Log", iconName: "ScrollText" },
     { to: "/admin/reports", label: "Reports", iconName: "BarChart3" },
     SEARCH_ITEM,
-    PROFILE_ITEM,
   ],
   LEGAL_PRACTITIONER: [
     { to: "/legal/dashboard", label: "Dashboard", iconName: "Gauge" },

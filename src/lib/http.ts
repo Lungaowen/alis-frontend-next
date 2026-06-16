@@ -45,7 +45,15 @@ http.interceptors.response.use(
   (error: AxiosError) => {
     const status = error.response?.status ?? 0;
     const data = error.response?.data;
+    const isLoginRequest = error.config?.url?.includes("/api/auth/login");
+
     if (status === 401 || status === 403) {
+      // For login failures, extract the actual error message from response
+      if (isLoginRequest) {
+        const errorMessage = extractMessage(data, "Invalid credentials");
+        return Promise.reject(new AlisApiError(status, errorMessage, data));
+      }
+
       // Only clear session if we actually have a session stored
       const currentSession = getStoredSession();
       if (currentSession) {

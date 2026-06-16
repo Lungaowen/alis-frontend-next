@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Search as SearchIcon, FileText, ClipboardCheck, Quote, Loader2 } from "lucide-react";
+import { Search as SearchIcon, FileText, ClipboardCheck, Quote, Loader2, File } from "lucide-react";
 import { PortalLayout } from "@/components/app/PortalLayout";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -169,17 +169,21 @@ export default function SearchPage() {
                 <FileText className="h-4 w-4" />
               </span>
               <div className="min-w-0 flex-1">
-                <Link
-                  to={`/dashboard/documents/${d.documentId}`}
-                  className="block truncate text-sm font-medium hover:underline"
-                >
+                <span className="block truncate text-sm font-medium">
                   {d.title}
-                </Link>
+                </span>
                 <p className="text-xs text-muted-foreground">
                   Uploaded {d.uploadedAt ? new Date(d.uploadedAt).toLocaleString() : "—"} · Client #
                   {d.clientId}
                 </p>
               </div>
+              {d.fileUrl && (
+                <Button size="sm" variant="outline" asChild>
+                  <a href={d.fileUrl} target="_blank" rel="noopener noreferrer">
+                    <File className="mr-1 h-3 w-3" /> Download
+                  </a>
+                </Button>
+              )}
               <StatusBadge status={d.status} />
             </li>
           ))}

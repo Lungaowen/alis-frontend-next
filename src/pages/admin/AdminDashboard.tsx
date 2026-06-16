@@ -123,7 +123,7 @@ export default function AdminDashboardPage() {
                   {audit.map((a) => (
                     <tr key={a.logId} className="border-t border-border">
                       <td className="px-5 py-3 text-muted-foreground">
-                        {new Date(a.timestamp).toLocaleString()}
+                        {new Date(a.createdAt).toLocaleString()}
                       </td>
                       <td className="px-5 py-3 font-medium">{a.actionType}</td>
                       <td className="px-5 py-3">{a.description}</td>
