@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { X, Home, FileText, Upload, Gavel, Search, User, ShieldAlert, BarChart3, Users, FileCheck } from "lucide-react";
+import { X, Home, FileText, Upload, Gavel, Search, User, ShieldAlert, BarChart3, Users, FileCheck, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 
@@ -16,6 +16,23 @@ export function MobileNav() {
   const { session } = useAuth();
   const location = useLocation();
   const role = session?.role;
+
+  // Keyboard shortcut: CTRL+ALT+B to toggle sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.altKey && e.key === 'b') {
+        e.preventDefault();
+        setIsOpen(prev => !prev);
+      }
+      // ESC to close
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   const navItems: NavItem[] = [
     { to: "/dashboard", label: "Dashboard", icon: Home, roles: ["USER", "LEGAL_PRACTITIONER", "DEAL_MAKER", "ADMIN"] },
@@ -40,35 +57,27 @@ export function MobileNav() {
     setIsOpen(false);
   };
 
+  const toggleSidebar = () => {
+    setIsOpen(prev => !prev);
+  };
+
   return (
     <>
-      {/* Hamburger Menu Button */}
+      {/* Toggle Button */}
       <Button
         variant="ghost"
         size="icon"
-        className="md:hidden"
-        onClick={() => setIsOpen(true)}
-        aria-label="Open menu"
+        onClick={toggleSidebar}
+        aria-label="Toggle sidebar"
+        title="Toggle sidebar (Ctrl+Alt+B)"
       >
-        <svg
-          className="h-6 w-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 6h16M4 12h16M4 18h16"
-          />
-        </svg>
+        <Menu className="h-5 w-5" />
       </Button>
 
       {/* Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
           onClick={() => setIsOpen(false)}
           aria-hidden="true"
         />
@@ -76,7 +85,7 @@ export function MobileNav() {
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-72 transform bg-card shadow-2xl transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 transform bg-card shadow-2xl transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -95,7 +104,7 @@ export function MobileNav() {
               variant="ghost"
               size="icon"
               onClick={() => setIsOpen(false)}
-              aria-label="Close menu"
+              aria-label="Close sidebar"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -132,6 +141,7 @@ export function MobileNav() {
             <div className="text-xs text-muted-foreground">
               <p className="font-medium">{session?.fullName}</p>
               <p className="mt-1">{role?.replace("_", " ")}</p>
+              <p className="mt-2 text-[10px] opacity-60">Press Ctrl+Alt+B to toggle</p>
             </div>
           </div>
         </div>
