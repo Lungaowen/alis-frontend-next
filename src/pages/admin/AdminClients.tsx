@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, ChevronLeft, ChevronRight, Loader2, Sparkles, Trash2, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Sparkles, Trash2, Download } from "lucide-react";
 import { PortalLayout } from "@/components/app/PortalLayout";
 import { Spinner, EmptyState } from "@/components/app/Primitives";
 import { RiskBadge } from "@/components/app/StatusBadges";
@@ -8,9 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -31,10 +28,8 @@ import { cn } from "@/lib/utils";
 
 const ROLES: { value: Role | "ALL"; label: string }[] = [
   { value: "ALL", label: "All roles" },
-  { value: "USER", label: "User" },
   { value: "LEGAL_PRACTITIONER", label: "Legal Practitioner" },
   { value: "DEAL_MAKER", label: "Deal Maker" },
-  { value: "ADMIN", label: "Administrator" },
 ];
 
 function unwrap(res: unknown): ClientRecord[] {
@@ -50,10 +45,7 @@ export default function AdminClientsPage() {
   const [size] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
 
-  const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<Role | "ALL">("ALL");
-  const [from, setFrom] = useState<Date | undefined>();
-  const [to, setTo] = useState<Date | undefined>();
 
   const [selected, setSelected] = useState<ClientRecord | null>(null);
   const [editing, setEditing] = useState(false);
@@ -79,30 +71,6 @@ export default function AdminClientsPage() {
   }, [page, size, roleFilter]);
 
   useEffect(() => { load(); }, [load]);
-
-  async function applyFilter() {
-    setLoading(true);
-    try {
-      const res = await adminFilterClients({
-        searchQuery: search || undefined,
-        role: roleFilter === "ALL" ? null : roleFilter,
-        registeredFrom: from ? format(from, "yyyy-MM-dd") : null,
-        registeredTo: to ? format(to, "yyyy-MM-dd") : null,
-      });
-      setClients(unwrap(res));
-      setTotalPages(1);
-      setPage(0);
-    } catch (e) {
-      toast.error((e as Error)?.message ?? "Filter failed");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function clearFilters() {
-    setSearch(""); setRoleFilter("ALL"); setFrom(undefined); setTo(undefined); setPage(0);
-    load();
-  }
 
   function downloadClientsCSV() {
     const headers = [
@@ -141,24 +109,13 @@ export default function AdminClientsPage() {
       }
     >
       {/* Filter bar */}
-      <div className="mb-5 grid gap-3 rounded-lg border border-border bg-card p-4 md:grid-cols-5">
-        <Input
-          placeholder="Search by name or email"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className="mb-5 grid gap-3 rounded-lg border border-border bg-card p-4 md:grid-cols-1">
         <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as Role | "ALL")}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             {ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        <DatePickerField label="From" value={from} onChange={setFrom} />
-        <DatePickerField label="To" value={to} onChange={setTo} />
-        <div className="flex gap-2">
-          <Button onClick={applyFilter} className="flex-1">Filter</Button>
-          <Button variant="outline" onClick={clearFilters}>Clear</Button>
-        </div>
       </div>
 
       {loading ? (
@@ -174,8 +131,6 @@ export default function AdminClientsPage() {
                 <th className="px-4 py-3 text-left">Full Name</th>
                 <th className="px-4 py-3 text-left">Email</th>
                 <th className="px-4 py-3 text-left">Role</th>
-                <th className="px-4 py-3 text-left">Registered</th>
-                <th className="px-4 py-3 text-left">Documents</th>
                 <th className="px-4 py-3 text-left">AI Risk</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
@@ -193,10 +148,6 @@ export default function AdminClientsPage() {
                         {c.role.replace("_", " ")}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {c.registeredAt ? new Date(c.registeredAt).toLocaleDateString() : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">{c.documentCount ?? 0}</td>
                     <td className="px-4 py-3">
                       {risk === "LOADING" ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
@@ -288,22 +239,6 @@ export default function AdminClientsPage() {
   );
 }
 
-function DatePickerField({ label, value, onChange }: { label: string; value?: Date; onChange: (d?: Date) => void }) {
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" className={cn("justify-start text-left font-normal", !value && "text-muted-foreground")}>
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(value, "PPP") : <span>{label}</span>}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <Calendar mode="single" selected={value} onSelect={onChange} initialFocus className="p-3 pointer-events-auto" />
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 function ClientDrawer({
   client, editing, setEditing, onSaved, onDelete,
 }: {
@@ -313,19 +248,18 @@ function ClientDrawer({
   const [fullName, setFullName] = useState(client.fullName);
   const [email, setEmail] = useState(client.email);
   const [role, setRole] = useState<Role>(client.role);
-  const [active, setActive] = useState(client.active ?? true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setFullName(client.fullName); setEmail(client.email); setRole(client.role); setActive(client.active ?? true);
+    setFullName(client.fullName); setEmail(client.email); setRole(client.role);
   }, [client]);
 
   async function save() {
     setSaving(true);
     try {
-      const updated = await adminUpdateClient(client.clientId, { fullName, email, role, active });
+      const updated = await adminUpdateClient(client.clientId, { fullName, email, role });
       toast.success("Client updated");
-      onSaved({ ...client, ...updated, fullName, email, role, active });
+      onSaved({ ...client, ...updated, fullName, email, role });
     } catch (e) {
       toast.error((e as Error)?.message ?? "Update failed");
     } finally {
@@ -352,24 +286,11 @@ function ClientDrawer({
             <Select value={role} onValueChange={(v) => setRole(v as Role)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="USER">User</SelectItem>
                 <SelectItem value="LEGAL_PRACTITIONER">Legal Practitioner</SelectItem>
                 <SelectItem value="DEAL_MAKER">Deal Maker</SelectItem>
-                <SelectItem value="ADMIN">Administrator</SelectItem>
               </SelectContent>
             </Select>
           ) : <Badge variant="outline">{role.replace("_", " ")}</Badge>}
-        </Field>
-        <Field label="Active">
-          <div className="flex items-center gap-2">
-            <Switch checked={active} onCheckedChange={setActive} disabled={!editing} />
-            <span className="text-sm text-muted-foreground">{active ? "Account enabled" : "Disabled"}</span>
-          </div>
-        </Field>
-        <Field label="Registered">
-          <p className="text-sm text-muted-foreground">
-            {client.registeredAt ? new Date(client.registeredAt).toLocaleString() : "—"}
-          </p>
         </Field>
       </div>
 
