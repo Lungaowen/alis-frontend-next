@@ -1,0 +1,1 @@
+import type {Matter} from "@/src/modules/shared";export interface MatterRepository{list():Promise<Matter[]>;get(id:string|number):Promise<Matter>;create(input:Omit<Matter,"id">):Promise<Matter>;update(id:string|number,input:Partial<Matter>):Promise<Matter>;}
