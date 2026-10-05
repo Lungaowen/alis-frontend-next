@@ -1,0 +1,9 @@
+const JAVA_API=process.env.NEXT_PUBLIC_JAVA_API_URL??"http://localhost:8080";
+const AI_API=process.env.NEXT_PUBLIC_AI_API_URL??"http://localhost:8000";
+function token(){return typeof window==="undefined"?null:localStorage.getItem("alis_token")}
+async function request<T>(base:string,path:string,init?:RequestInit):Promise<T>{
+ const headers=new Headers(init?.headers); headers.set("Content-Type","application/json"); const auth=token(); if(auth) headers.set("Authorization","Bearer "+auth);
+ const response=await fetch(base+path,{...init,headers}); if(!response.ok) throw new Error("ALIS API request failed: "+response.status); return response.json() as Promise<T>;
+}
+export const javaApi={get:<T>(path:string)=>request<T>(JAVA_API,path),post:<T>(path:string,body:unknown)=>request<T>(JAVA_API,path,{method:"POST",body:JSON.stringify(body)})};
+export const aiApi={get:<T>(path:string)=>request<T>(AI_API,path),post:<T>(path:string,body:unknown)=>request<T>(AI_API,path,{method:"POST",body:JSON.stringify(body)})};
