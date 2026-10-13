@@ -2,7 +2,7 @@ import type { SVGProps } from "react";
 
 type IconName = "grid"|"scan"|"folder"|"document"|"shield"|"briefcase"|"settings"|"search"|"bell"|"plus"|"arrow"|"spark"|"clock"|"users"|"chat"|"upload"|"check"|"calendar"|"lock"|"dots"|"gavel";
 
-const paths:Record<IconName,string[]> = {
+const paths: Record<IconName, string[]> = {
   grid:["M4 4h6v6H4z","M14 4h6v6h-6z","M4 14h6v6H4z","M14 14h6v6h-6z"],
   scan:["M5 8V5h3","M19 8V5h-3","M5 16v3h3","M19 16v3h-3","M8 12h8"],
   folder:["M3 7h6l2 2h10v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"],
@@ -26,6 +26,6 @@ const paths:Record<IconName,string[]> = {
   gavel:["M14 6l4 4","M10 10l8 8","M5 19l14-14","M3 21h8"]
 };
 
-export function Icon({name,size=18,strokeWidth=1.8,className="",...props}:SVGProps<SVGSVGElement>&{name:IconName}) {
+export function Icon({name,size=18,strokeWidth=1.8,className="",...props}: SVGProps<SVGSVGElement> & {name:IconName;size?:number}) {
   return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className} {...props}>{paths[name].map((d,i)=><path key={i} d={d}/>)}</svg>;
 }
