@@ -20,11 +20,11 @@ type JobStatus = { task_id: string; status: string; message: string; result?: Tr
 type MatterCreated = { id: number; title?: string };
 
 const API_BASE = (process.env.NEXT_PUBLIC_JAVA_API_URL || "http://localhost:8080").replace(/\/$/, "");
-const workflowOptions: { id: WorkflowId; label: string; summary: string; checklist: string[]; quickStart: string }[] = [
-  { id: "general", label: "General situation", summary: "Map the facts and identify what still needs confirming.", checklist: ["What happened, and who was involved?", "Which dates, amounts or promises matter?", "Which records can confirm the account?"], quickStart: "I need help organising a situation before I speak with a legal professional." },
-  { id: "ccma_dispute", label: "Employment / CCMA", summary: "Prepare employment events, notices and relevant records.", checklist: ["Describe the employment event and date.", "Keep the contract, payslips and disciplinary records.", "Confirm when any notice or referral document was received."], quickStart: "I have an employment-related dispute and want to organise the facts before seeking advice." },
-  { id: "lease_dispute", label: "Lease / landlord notice", summary: "Organise the agreement, payments, notices and property evidence.", checklist: ["Keep the full lease and addenda.", "Record relevant payments, repairs and communications.", "Confirm the wording and receipt date of any notice."], quickStart: "I have a lease or landlord-related issue and want to organise the facts and evidence." },
-  { id: "popia_incident", label: "Personal information incident", summary: "Record known events, affected information and evidence gaps.", checklist: ["Describe when the incident was discovered.", "List what information may be involved and who may be affected.", "Preserve relevant system logs and note any containment steps."], quickStart: "I am concerned about a possible personal-information incident and need to organise what is known." },
+const workflowOptions: { id: WorkflowId; label: string; summary: string; checklist: string[];  }[] = [
+  { id: "general", label: "General situation", summary: "Map the facts and identify what still needs confirming.", checklist: ["What happened, and who was involved?", "Which dates, amounts or promises matter?", "Which records can confirm the account?"] },
+  { id: "ccma_dispute", label: "Employment / CCMA", summary: "Prepare employment events, notices and relevant records.", checklist: ["Describe the employment event and date.", "Keep the contract, payslips and disciplinary records.", "Confirm when any notice or referral document was received."] },
+  { id: "lease_dispute", label: "Lease / landlord notice", summary: "Organise the agreement, payments, notices and property evidence.", checklist: ["Keep the full lease and addenda.", "Record relevant payments, repairs and communications.", "Confirm the wording and receipt date of any notice."] },
+  { id: "popia_incident", label: "Personal information incident", summary: "Record known events, affected information and evidence gaps.", checklist: ["Describe when the incident was discovered.", "List what information may be involved and who may be affected.", "Preserve relevant system logs and note any containment steps."] },
 ];
 
 async function apiRequest<T>(path: string, token: string, init?: RequestInit): Promise<T> {
@@ -63,8 +63,6 @@ export default function Scanner() {
     const value = new URLSearchParams(window.location.search).get("workflow");
     if (["general", "ccma_dispute", "lease_dispute", "popia_incident"].includes(value || "")) {
       setWorkflow(value as WorkflowId);
-      const selected = workflowOptions.find((item) => item.id === value);
-      if (selected && !situation) setSituation(selected.quickStart);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -87,7 +85,7 @@ export default function Scanner() {
         method: "POST",
         body: JSON.stringify({
           title: "Situation triage: " + selectedWorkflow.label,
-          description: situation.trim().slice(0, 1500),
+          description: "Private pre-lawyer triage workspace. Workflow: " + selectedWorkflow.label + ". The detailed narrative is processed separately for the situation map.",
         }),
       });
       if (!matter?.id || !Number.isFinite(Number(matter.id))) {
@@ -191,7 +189,7 @@ export default function Scanner() {
           <section className="mt-8 space-y-5" aria-labelledby="result-heading">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#176b5b]">Preliminary analysis</p><h2 id="result-heading" className="mt-2 text-2xl font-semibold tracking-tight">Your situation map</h2><p className="mt-2 text-sm text-black/50">Matter #{matterId} · Review the source facts and unresolved gaps below.</p></div>
-              {matterId && <Link href={"/matter/" + matterId} className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-medium hover:bg-black/[0.03]">Open matter <ArrowRight size={15} /></Link>}
+              {matterId && <Link href={"/matters/" + matterId + "/triage"} className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-medium hover:bg-black/[0.03]">Open matter <ArrowRight size={15} /></Link>}
             </div>
 
             <div className="flex items-start gap-3 rounded-2xl border border-[#d9e5df] bg-[#eef4f1] p-4 sm:p-5"><ShieldAlert size={20} className="mt-0.5 shrink-0 text-[#176b5b]" /><div><p className="font-semibold">AI-generated preparation aid</p><p className="mt-1 text-sm leading-6 text-black/65">This map reflects the supplied narrative and excerpts. It may be incomplete or mistaken. Confirm important facts against original records and get professional advice before acting on legal issues or deadlines.</p></div></div>
