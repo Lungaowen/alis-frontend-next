@@ -1,14 +1,15 @@
 "use client";
-import {useEffect,useState} from "react";
+import {use,useEffect,useState} from "react";
 import {AlisShell} from "@/components/alis-shell";
 import {Icon} from "@/components/icon";
 import {connectRealtime,type RealtimeMessage} from "@/lib/realtime";
 
-export default function MatterPage({params}:{params:{id:string}}){
+export default function MatterPage({params}:{params:Promise<{id:string}>}){
+  const {id}=use(params);
   const [live,setLive]=useState<RealtimeMessage|null>(null);
-  useEffect(()=>connectRealtime(m=>{if(!m.matterId||m.matterId===params.id)setLive(m)}),[params.id]);
+  useEffect(()=>connectRealtime(m=>{if(!m.matterId||m.matterId===id)setLive(m)}),[id]);
   return <AlisShell><div className="page">
-    <div className="page-head"><div><div className="eyebrow">{params.id} · matter workspace</div><h1>Employment agreement review</h1><p>Structured around evidence, findings and next actions instead of one giant AI chat.</p><div style={{display:"flex",flexWrap:"wrap",gap:7,marginTop:10}}><span className="status status-review"><span className="dot"/>Potential legal concern</span><span className="status status-muted">Nandi M.</span><span className="status status-muted">Employment</span><span className="status status-muted">Moraka Attorneys</span></div></div><div className="actions"><button className="btn"><Icon name="dots" size={15}/></button></div></div>
+    <div className="page-head"><div><div className="eyebrow">{id} · matter workspace</div><h1>Employment agreement review</h1><p>Structured around evidence, findings and next actions instead of one giant AI chat.</p><div style={{display:"flex",flexWrap:"wrap",gap:7,marginTop:10}}><span className="status status-review"><span className="dot"/>Potential legal concern</span><span className="status status-muted">Nandi M.</span><span className="status status-muted">Employment</span><span className="status status-muted">Moraka Attorneys</span></div></div><div className="actions"><button className="btn"><Icon name="dots" size={15}/></button></div></div>
     {live&&<div className="card" style={{marginTop:14}}><div className="card-body"><div style={{display:"flex",justifyContent:"space-between",fontSize:10,fontWeight:800}}><span>{live.stage||"Analysis"}</span><span>{live.progress||0}%</span></div><div style={{height:6,marginTop:8,borderRadius:99,background:"#e8eeeb"}}><div style={{height:6,borderRadius:99,background:"var(--brand)",width:(live.progress||0)+"%"}}/></div><p style={{margin:"7px 0 0",fontSize:10,color:"var(--muted)"}}>{live.message}</p></div></div>}
     <div className="grid-2" style={{marginTop:14}}><section className="card"><div className="card-head"><div><h2>Legal intelligence</h2><p>Explain findings with evidence and sources</p></div><span className="status status-review"><span className="dot"/>Needs review</span></div><div className="card-body" style={{display:"grid",gap:10}}>
       <div className="card" style={{boxShadow:"none",background:"#fbfcfb"}}><div className="card-body"><h3 style={{margin:0,fontSize:12}}>Termination clause may deserve attention</h3><p style={{margin:"6px 0 0",fontSize:10,color:"var(--muted)",lineHeight:1.55}}>The working summary indicates a termination provision that may not align with the situation described by the client.</p><div style={{marginTop:8,color:"var(--brand2)",fontSize:9,fontWeight:800}}>Source · Employment Contract · Clause 8.2</div></div></div>
