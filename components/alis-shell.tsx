@@ -1,4 +1,89 @@
 "use client";
-import Link from "next/link";import {usePathname} from "next/navigation";import {Activity,Briefcase,FileText,FolderOpen,LayoutDashboard,Search,ShieldCheck,UserRound,ScanLine} from "lucide-react";
-const links=[{href:"/dashboard",label:"Overview",icon:LayoutDashboard},{href:"/scanner",label:"Situation Scanner",icon:ScanLine},{href:"/matters",label:"Matters",icon:FolderOpen},{href:"/documents",label:"Evidence & Documents",icon:FileText},{href:"/profile",label:"Legal Safety Profile",icon:ShieldCheck},{href:"/workspace",label:"Professional Workspace",icon:Briefcase}];
-export function AlisShell({children}:{children:React.ReactNode}){const pathname=usePathname();return <div className="min-h-screen bg-[#f7f8f7] text-[#15221f]"><aside className="fixed inset-y-0 left-0 hidden w-64 border-r bg-white p-5 lg:block"><Link href="/dashboard" className="mb-10 block"><div className="font-display text-2xl font-extrabold tracking-tight">ALIS</div><div className="text-xs text-black/45">Legal early-warning system</div></Link><nav className="space-y-1">{links.map(({href,label,icon:Icon})=>{const active=pathname===href||pathname.startsWith(href+"/");return <Link key={href} href={href} className={"flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium "+(active?"bg-[#173d35] text-white":"text-black/60 hover:bg-black/5")}><Icon size={17} strokeWidth={1.8}/>{label}</Link>})}</nav><div className="absolute bottom-5 left-5 right-5 rounded-2xl bg-[#eef4f1] p-4"><div className="flex items-center gap-2 text-sm font-semibold"><Activity size={16} strokeWidth={1.8}/>Live intelligence</div><p className="mt-1 text-xs text-black/50">Tenant-scoped analysis can update in real time.</p></div></aside><main className="lg:pl-64"><header className="sticky top-0 z-10 border-b bg-white/90 px-5 py-4 backdrop-blur lg:px-10"><div className="mx-auto flex max-w-7xl items-center justify-between"><div className="flex items-center gap-3"><Search size={17} strokeWidth={1.8} className="text-black/35"/><span className="text-sm text-black/45">Search matters, documents and legal intelligence</span></div><Link href="/profile" className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm"><UserRound size={16} strokeWidth={1.8}/>Profile</Link></div></header><div className="mx-auto max-w-7xl p-5 lg:p-10">{children}</div></main></div>}
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import Dashboard from "@mui/icons-material/Dashboard";
+import QrCodeScanner from "@mui/icons-material/QrCodeScanner";
+import FolderOpen from "@mui/icons-material/FolderOpen";
+import Description from "@mui/icons-material/Description";
+import Security from "@mui/icons-material/Security";
+import BusinessCenter from "@mui/icons-material/BusinessCenter";
+import Person from "@mui/icons-material/Person";
+import VerifiedUser from "@mui/icons-material/VerifiedUser";
+import HelpOutline from "@mui/icons-material/HelpOutline";
+import { RealtimeStatus } from "@/components/realtime-status";
+
+const personalLinks = [
+  { href: "/dashboard", label: "Overview", icon: Dashboard },
+  { href: "/scanner", label: "Situation scanner", icon: QrCodeScanner },
+  { href: "/matters", label: "Matters", icon: FolderOpen },
+  { href: "/documents", label: "Evidence locker", icon: Description },
+  { href: "/profile", label: "Legal safety profile", icon: Security },
+];
+const professionalLinks = [{ href: "/workspace", label: "Professional workspace", icon: BusinessCenter }];
+const pageTitles: Record<string, string> = {
+  "/dashboard": "Overview",
+  "/scanner": "Situation scanner",
+  "/matters": "Matters",
+  "/documents": "Evidence locker",
+  "/profile": "Legal safety profile",
+  "/workspace": "Professional workspace",
+};
+
+function isLinkActive(pathname: string, href: string) {
+  if (href === "/matters" && pathname.startsWith("/matter/")) return true;
+  return pathname === href || pathname.startsWith(href + "/");
+}
+
+export function AlisShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const pageTitle = pathname.startsWith("/matter/") ? "Matter overview" : (pageTitles[pathname] || "Legal workspace");
+
+  function renderLink(item: (typeof personalLinks)[number] | (typeof professionalLinks)[number]) {
+    const Icon = item.icon;
+    const active = isLinkActive(pathname, item.href);
+    return <Link key={item.href} href={item.href} className={"app-nav-link" + (active ? " is-active" : "")} aria-current={active ? "page" : undefined}><Icon /><span>{item.label}</span></Link>;
+  }
+
+  function renderMobileLink(item: (typeof personalLinks)[number]) {
+    const Icon = item.icon;
+    const active = isLinkActive(pathname, item.href);
+    return <Link key={item.href} href={item.href} className={"mobile-nav-item" + (active ? " is-active" : "")} aria-current={active ? "page" : undefined}><Icon /><span>{item.href === "/scanner" ? "Scan" : item.href === "/documents" ? "Evidence" : item.label}</span></Link>;
+  }
+
+  return (
+    <div className="app-frame">
+      <aside className="app-sidebar" aria-label="Main workspace navigation">
+        <Link href="/dashboard" className="app-brand"><span className="brand-mark">A</span><span className="brand-words"><strong>ALIS</strong><span>Legal intelligence</span></span></Link>
+        <div className="sidebar-rule" />
+        <p className="nav-caption">Your space</p>
+        <nav className="app-nav">{personalLinks.map(renderLink)}</nav>
+        <p className="nav-caption">Professional tools</p>
+        <nav className="app-nav">{professionalLinks.map(renderLink)}</nav>
+        <div className="sidebar-bottom">
+          <div className="sidebar-note">
+            <div className="sidebar-note-top"><VerifiedUser /> Start with clear facts</div>
+            <p>Keep documents, dates and your own notes together. A complete context makes professional conversations more useful.</p>
+          </div>
+          <Link href="/profile" className="sidebar-help"><HelpOutline /> Your legal safety profile</Link>
+        </div>
+      </aside>
+
+      <div className="app-main">
+        <header className="app-topbar">
+          <div className="topbar-context"><p className="topbar-kicker">ALIS workspace</p><strong>{pageTitle}</strong></div>
+          <div className="topbar-actions">
+            <span className="private-workspace"><VerifiedUser /> Personal workspace</span>
+            <RealtimeStatus />
+            <Link href="/profile" className="user-chip" aria-label="Open legal safety profile"><span className="user-avatar">A</span><span className="user-chip-label">My profile</span><Person fontSize="small" /></Link>
+          </div>
+        </header>
+        <main className="app-main-inner">{children}</main>
+      </div>
+
+      <nav className="mobile-nav" aria-label="Mobile navigation">
+        {personalLinks.filter((item) => ["/dashboard", "/scanner", "/matters", "/documents"].includes(item.href)).map(renderMobileLink)}
+      </nav>
+    </div>
+  );
+}

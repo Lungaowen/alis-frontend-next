@@ -1,2 +1,42 @@
-import {Users,FileText,FolderOpen,Settings2} from "lucide-react";import {AlisShell} from "@/components/alis-shell";import {TenantSwitcher} from "@/components/tenant-switcher";import {getActiveTenant} from "@/lib/tenant";
-export default function Workspace(){const tenant=getActiveTenant();const cards=[[Users,"Clients","Clients belonging to this professional workspace"],[FolderOpen,"Matters","Tenant-scoped legal matters and workflows"],[FileText,"Documents","Tenant-scoped documents, evidence and legal intelligence"],[Settings2,"Workspace settings","Team, permissions and professional configuration"]] as const;return <AlisShell><div className="flex flex-wrap items-end justify-between gap-5"><div><p className="text-sm font-semibold text-[#176b5b]">Professional workspace</p><h1 className="mt-2 text-4xl font-bold">{tenant.name}</h1><p className="mt-2 text-black/50">Tenant-isolated workspace for legal professionals.</p></div><TenantSwitcher/></div><div className="mt-8 grid gap-4 md:grid-cols-2">{cards.map(([Icon,title,text])=><div key={title} className="rounded-3xl border bg-white p-6"><Icon size={21} className="text-[#176b5b]"/><h2 className="mt-8 text-xl font-bold">{title}</h2><p className="mt-2 text-sm text-black/50">{text}</p></div>)}</div><div className="mt-8 rounded-3xl bg-[#173d35] p-6 text-white"><p className="text-xs uppercase tracking-wider text-white/50">Tenant context</p><p className="mt-2 font-mono text-sm">{tenant.id}</p><p className="mt-1 text-sm text-white/60">Requests should carry this tenant context to the backend and realtime room.</p></div></AlisShell>}
+import Link from "next/link";
+import ArrowForward from "@mui/icons-material/ArrowForward";
+import ArrowOutward from "@mui/icons-material/ArrowOutward";
+import BusinessCenter from "@mui/icons-material/BusinessCenter";
+import Description from "@mui/icons-material/Description";
+import FolderOpen from "@mui/icons-material/FolderOpen";
+import People from "@mui/icons-material/People";
+import Settings from "@mui/icons-material/Settings";
+import Shield from "@mui/icons-material/Shield";
+import { AlisShell } from "@/components/alis-shell";
+
+const modules = [
+  { icon: People, title: "Clients and memberships", description: "A professional practice should see only the clients and matters its membership allows.", href: "/matters", linkText: "View matters" },
+  { icon: FolderOpen, title: "Matter management", description: "Organise open matters, supporting evidence, milestones and next steps in one working context.", href: "/matters", linkText: "Open matter list" },
+  { icon: Description, title: "Documents and evidence", description: "Keep originals, extracted details and review notes connected to the matter they belong to.", href: "/documents", linkText: "Open evidence locker" },
+  { icon: Settings, title: "Workspace configuration", description: "Roles, permissions, membership and retention settings belong to the organisation boundary.", href: "/profile", linkText: "Review profile preview" },
+];
+
+export default function Workspace() {
+  return (
+    <AlisShell>
+      <section className="page-intro">
+        <div><p className="page-kicker">Professional tools</p><h1 className="page-title">A workspace built around matters.</h1><p className="page-description">ALIS can support professional practices alongside individual accounts. Client records and organisational access need separate, explicit permissions.</p></div>
+        <span className="sample-label">Professional view preview</span>
+      </section>
+
+      <section className="workspace-banner">
+        <div><p className="panel-label">Professional workspace</p><h2>Practice overview</h2><p>Example organisation context, shown to illustrate the professional experience.</p></div>
+        <div className="workspace-banner-meta"><BusinessCenter sx={{ color: "#47734e", fontSize: 25 }} /><strong>Example workspace</strong><span>Membership and tenant context must come from the API.</span></div>
+      </section>
+
+      <section className="workspace-grid">
+        {modules.map((module) => {
+          const Icon = module.icon;
+          return <article className="workspace-module" key={module.title}><div className="workspace-module-top"><span className="profile-icon"><Icon /></span><ArrowOutward sx={{ color: "#9ba69b", fontSize: 17 }} /></div><h3>{module.title}</h3><p>{module.description}</p><Link href={module.href} className="workspace-module-link">{module.linkText} <ArrowForward /></Link></article>;
+        })}
+      </section>
+
+      <div className="notice-box" style={{ marginTop: 18 }}><Shield /><div><strong>Access control is not a visual feature</strong><p>The Java backend must validate membership and tenant scope on every protected request. A browser-selected workspace is never proof of authorisation.</p></div></div>
+    </AlisShell>
+  );
+}
