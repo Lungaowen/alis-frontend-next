@@ -1,4 +1,24 @@
 "use client";
-import Link from "next/link";import {usePathname} from "next/navigation";import {Activity,Briefcase,FileText,FolderOpen,LayoutDashboard,Search,ShieldCheck,UserRound,ScanLine} from "lucide-react";
-const links=[{href:"/dashboard",label:"Overview",icon:LayoutDashboard},{href:"/scanner",label:"Situation Scanner",icon:ScanLine},{href:"/matters",label:"Matters",icon:FolderOpen},{href:"/documents",label:"Evidence & Documents",icon:FileText},{href:"/profile",label:"Legal Safety Profile",icon:ShieldCheck},{href:"/workspace",label:"Professional Workspace",icon:Briefcase}];
-export function AlisShell({children}:{children:React.ReactNode}){const pathname=usePathname();return <div className="min-h-screen bg-[#f7f8f7] text-[#15221f]"><aside className="fixed inset-y-0 left-0 hidden w-64 border-r bg-white p-5 lg:block"><Link href="/dashboard" className="mb-10 block"><div className="font-display text-2xl font-extrabold tracking-tight">ALIS</div><div className="text-xs text-black/45">Legal early-warning system</div></Link><nav className="space-y-1">{links.map(({href,label,icon:Icon})=>{const active=pathname===href||pathname.startsWith(href+"/");return <Link key={href} href={href} className={"flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium "+(active?"bg-[#173d35] text-white":"text-black/60 hover:bg-black/5")}><Icon size={17} strokeWidth={1.8}/>{label}</Link>})}</nav><div className="absolute bottom-5 left-5 right-5 rounded-2xl bg-[#eef4f1] p-4"><div className="flex items-center gap-2 text-sm font-semibold"><Activity size={16} strokeWidth={1.8}/>Live intelligence</div><p className="mt-1 text-xs text-black/50">Tenant-scoped analysis can update in real time.</p></div></aside><main className="lg:pl-64"><header className="sticky top-0 z-10 border-b bg-white/90 px-5 py-4 backdrop-blur lg:px-10"><div className="mx-auto flex max-w-7xl items-center justify-between"><div className="flex items-center gap-3"><Search size={17} strokeWidth={1.8} className="text-black/35"/><span className="text-sm text-black/45">Search matters, documents and legal intelligence</span></div><Link href="/profile" className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm"><UserRound size={16} strokeWidth={1.8}/>Profile</Link></div></header><div className="mx-auto max-w-7xl p-5 lg:p-10">{children}</div></main></div>}
+import Link from "next/link";
+import {usePathname} from "next/navigation";
+import {Icon} from "@/components/icon";
+
+const links=[
+  {href:"/dashboard",label:"Overview",icon:"grid" as const},
+  {href:"/scanner",label:"Situation Scanner",icon:"scan" as const},
+  {href:"/matters",label:"Matters",icon:"folder" as const,count:"8"},
+  {href:"/documents",label:"Evidence & Documents",icon:"document" as const},
+  {href:"/profile",label:"Legal Safety Profile",icon:"shield" as const},
+  {href:"/workspace",label:"Professional Workspace",icon:"briefcase" as const},
+];
+
+export function AlisShell({children}:{children:React.ReactNode}) {
+  const pathname=usePathname();
+  const title=pathname==="/dashboard"?"Overview":pathname==="/scanner"?"Situation Scanner":pathname==="/matters"?"Matters":pathname==="/documents"?"Documents":pathname.startsWith("/matter/")?"Matter":pathname==="/profile"?"Legal Safety Profile":"Workspace";
+  return <div className="shell"><aside className="sidebar">
+    <Link href="/dashboard" className="brand"><span className="brand-mark">A</span><span className="brand-copy"><strong>ALIS</strong><span>Legal intelligence</span></span></Link>
+    <div className="nav-label">Command center</div><nav className="nav">{links.slice(0,2).map(l=><Link key={l.href} href={l.href} className={"nav-item "+(pathname===l.href?"active":"")}><Icon name={l.icon} size={17}/><span>{l.label}</span></Link>)}</nav>
+    <div className="nav-label">Matter workspace</div><nav className="nav">{links.slice(2).map(l=><Link key={l.href} href={l.href} className={"nav-item "+(pathname===l.href||pathname.startsWith(l.href+"/")?"active":"")}><Icon name={l.icon} size={17}/><span>{l.label}</span>{l.count&&<span className="count">{l.count}</span>}</Link>)}</nav>
+    <div className="sidebar-foot"><div className="workspace-card"><div className="eyebrow">Active workspace</div><strong>Moraka Attorneys</strong><div className="row"><Icon name="lock" size={13}/> Tenant-isolated environment</div></div></div>
+  </aside><main className="main"><header className="topbar"><div className="crumb">ALIS / <strong>{title}</strong></div><div className="global-search"><Icon name="search" size={15}/><input placeholder="Search matters, documents, clients..." /></div><div className="topbar-right"><button className="icon-button" aria-label="Notifications"><Icon name="bell" size={16}/></button><div className="avatar">LO</div></div></header>{children}</main></div>;
+}

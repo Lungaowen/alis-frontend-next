@@ -1,58 +1,12 @@
-"use client";
-
 import Link from "next/link";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
-import SecurityIcon from "@mui/icons-material/Security";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import { Icon } from "@/components/icon";
 
 export default function Home() {
-  return (
-    <main className="min-h-screen bg-[#f7f8f7]">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <div>
-          <div className="text-2xl font-black">ALIS</div>
-          <div className="text-xs text-black/45">Automated Legal Intelligence System</div>
-        </div>
-        <Link href="/dashboard" className="rounded-xl bg-[#173d35] px-5 py-3 text-sm font-semibold text-white">
-          Enter ALIS
-        </Link>
-      </nav>
-      <section className="mx-auto max-w-6xl px-6 pb-20 pt-16">
-        <div className="max-w-3xl">
-          <span className="rounded-full border bg-white px-4 py-2 text-xs font-semibold">
-            South African Legal Tech
-          </span>
-          <h1 className="mt-7 text-5xl font-bold leading-tight md:text-7xl">
-            Assess risks. Prepare cases. Act with confidence.
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-black/55">
-            Analyze situations, organize evidence, and seamlessly prepare for professional legal counsel.
-          </p>
-          <div className="mt-8 flex gap-3">
-            <Link href="/scanner" className="inline-flex items-center gap-2 rounded-xl bg-[#173d35] px-5 py-3 font-semibold text-white">
-              Start Analysis <ArrowForwardIcon fontSize="small" />
-            </Link>
-            <Link href="/dashboard" className="rounded-xl border bg-white px-5 py-3 font-semibold">
-              View Workspace
-            </Link>
-          </div>
-        </div>
-        <div className="mt-20 grid gap-4 md:grid-cols-3">
-          {[
-            [PhotoCameraIcon, "Document Scanning", "Extract text from physical documents."],
-            [AutoAwesomeIcon, "Legal Analysis", "Identify core issues and required steps."],
-            [SecurityIcon, "Case Preparation", "Structure evidence for legal counsel."]
-          ].map(([Icon, title, text]) => (
-            <div key={title as string} className="rounded-3xl border bg-white p-6">
-              {/* @ts-ignore */}
-              <Icon sx={{ color: "#173d35" }} />
-              <h2 className="mt-8 text-xl font-bold">{title as string}</h2>
-              <p className="mt-2 text-sm text-black/55">{text as string}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-    </main>
-  );
+  return <main><section className="hero"><div className="hero-copy">
+    <span className="hero-kicker"><Icon name="shield" size={14}/> South African legal intelligence</span>
+    <h1>Know what deserves attention before it becomes a legal problem.</h1>
+    <p>ALIS turns everyday situations, documents and evidence into a structured legal workspace. It helps people understand what may matter, what to collect and when professional review is appropriate.</p>
+    <div className="hero-actions"><Link href="/dashboard" className="btn btn-primary">Open workspace <Icon name="arrow" size={15}/></Link><Link href="/scanner" className="btn">Start a situation scan</Link></div>
+    <div className="hero-notes"><span className="hero-note"><Icon name="lock" size={14}/> Tenant-aware professional workspaces</span><span className="hero-note"><Icon name="document" size={14}/> Source-linked document intelligence</span><span className="hero-note"><Icon name="gavel" size={14}/> Professional review when required</span></div>
+  </div><div className="hero-visual"><div className="command-preview"><div className="preview-top"><div className="preview-dots"><span/><span/><span/></div><span style={{fontSize:10,color:"#7f8a85"}}>ALIS Command Centre</span></div><div className="preview-body"><div className="preview-side"><div style={{fontSize:11,fontWeight:800,color:"#173d35"}}>ALIS</div><div className="mini-nav"><span className="active"/><span/><span/><span/><span/></div></div><div className="preview-main"><div className="mini-title"/><div className="mini-sub"/><div className="preview-kpis">{[1,2,3,4].map(i=><div key={i} className="preview-kpi"><b/><i/></div>)}</div><div className="preview-grid"><div className="preview-card"><div className="mini-sub" style={{width:"30%"}}/><div className="preview-lines"><span/><span/><span/></div><div className="preview-lines"><span/><span/><span/></div></div><div className="preview-card"><div className="mini-sub" style={{width:"40%"}}/><div className="preview-chart">{[1,2,3,4,5,6].map(i=><span key={i}/>)}</div></div></div></div></div></div></div></section></main>;
 }
