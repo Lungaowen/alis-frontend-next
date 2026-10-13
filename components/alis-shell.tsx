@@ -10,7 +10,7 @@ import Security from "@mui/icons-material/Security";
 import BusinessCenter from "@mui/icons-material/BusinessCenter";
 import Person from "@mui/icons-material/Person";
 import VerifiedUser from "@mui/icons-material/VerifiedUser";
-import HelpOutline from "@mui/icons-material/HelpOutline";
+import Help from "@mui/icons-material/Help";
 import { RealtimeStatus } from "@/components/realtime-status";
 
 const personalLinks = [
@@ -65,7 +65,7 @@ export function AlisShell({ children }: { children: React.ReactNode }) {
             <div className="sidebar-note-top"><VerifiedUser /> Start with clear facts</div>
             <p>Keep documents, dates and your own notes together. A complete context makes professional conversations more useful.</p>
           </div>
-          <Link href="/profile" className="sidebar-help"><HelpOutline /> Your legal safety profile</Link>
+          <Link href="/profile" className="sidebar-help"><Help /> Your legal safety profile</Link>
         </div>
       </aside>
 
