@@ -1,215 +1,56 @@
 # ALIS Frontend
 
-ALIS is the legal early-warning and preparation layer between ordinary life and the legal system.
+ALIS (Automated Legal Intelligence System) is a South African legal-preparation experience. It helps people organise situations, documents and questions before making decisions or speaking to a qualified legal professional.
 
-The frontend is structured as a **modular monolith**: one deployable Next.js application containing independently owned business modules that share a small domain kernel. Modules communicate through application services and shared contracts rather than importing each other's internals.
+This repository contains the Next.js App Router frontend. The presentation layer is one deployable application, with distinct domain modules behind shared contracts.
 
-## Architecture
+## Product direction
 
-```text
-Next.js App Router
-        |
-        +---------------- Composition / UI ----------------+
-        |                                                    |
-        |  shared UI + routes + layouts                       |
-        |                                                    |
-        +---------------- Modular Monolith -----------------+
-        |                                                    |
-        |  auth     tenant     client     matter             |
-        |  document evidence  legal      realtime            |
-        |                                                    |
-        +---------------- Shared Domain Kernel --------------+
-        |                                                    |
-        |  User Tenant Client Matter Document Evidence       |
-        |  TimelineEvent LegalIssue Membership RealtimeEvent |
-        |                                                    |
-        +---------------- Infrastructure -------------------+
-        |                                                    |
-        |  HTTP client   tenant context   WebSocket          |
-        +-------------------+----------------+---------------+
-                            |                |
-                      Java Spring Boot   Python FastAPI
-                      domain + auth      AI/RAG + analysis
-                            |
-                    Cloudflare realtime edge
-```
+- Individuals work through an ALIS account and can organise matters, situation notes and evidence.
+- Legal practices use a professional workspace with client, matter, document and membership boundaries.
+- The interface prioritises plain language, explainable information, source visibility and human review.
+- Legal concern labels should be qualitative and grounded. The product must not invent numeric risk scores or imply guaranteed legal outcomes.
+- A client account is not an organisation. Workspace context represents the professional organisation, and the backend must enforce access rules on every protected request.
 
-The important boundary is that the frontend is **one application, not one module per deployment**. A module owns its domain behavior, application services, repositories/contracts and presentation adapters. Shared entities live in `src/modules/shared/domain` and are reused by all modules.
+## Technology
 
-## Module structure
+- Next.js App Router, React and TypeScript.
+- Material UI icons for functional interface iconography.
+- Shared CSS design tokens with Manrope headings and DM Sans body text.
+- Java Spring Boot API for authentication, membership, client, matter and legal workflow records.
+- Python FastAPI AI/RAG API for extraction, retrieval, analysis and report generation.
+- WebSocket realtime status through the configured realtime endpoint.
 
-```text
-src/modules/
-├── shared/
-│   ├── domain/           # shared entities and domain types
-│   ├── application/      # tenant context + cross-cutting errors
-│   └── infrastructure/   # shared HTTP transport
-│
-├── auth/
-│   ├── domain/           # AuthSession
-│   └── application/      # session lifecycle
-│
-├── tenant/
-│   ├── application/      # tenant selection and membership boundary
-│   └── presentation/     # workspace switcher
-│
-├── client/
-│   ├── domain/           # ClientRepository contract
-│   └── application/      # client use cases/API adapter
-│
-├── matter/
-│   ├── domain/           # MatterRepository contract
-│   └── application/      # matter use cases/API adapter
-│
-├── document/
-│   ├── domain/           # DocumentRepository contract
-│   └── application/      # document intelligence boundary
-│
-├── evidence/
-│   ├── domain/           # EvidenceRepository contract
-│   └── application/      # evidence access
-│
-├── legal/
-│   ├── domain/           # LegalIssueRepository contract
-│   └── application/      # legal intelligence/RAG boundary
-│
-└── realtime/
-    └── application/      # tenant/matter scoped realtime transport
-```
+## Run locally
 
-### Shared entities
+1. Copy .env.example to .env.local.
+2. Install dependencies with npm install.
+3. Start the development server with npm run dev.
+4. Run npm run typecheck before committing.
+5. Build the production bundle with npm run build.
 
-The shared kernel contains the canonical frontend representations of:
-
-- `User`
-- `Tenant`
-- `ProfessionalMembership`
-- `Client`
-- `Matter`
-- `Document`
-- `Evidence`
-- `TimelineEvent`
-- `LegalIssue`
-- `RealtimeEvent`
-
-This prevents the common problem where the Matter screen, Evidence screen and realtime layer each invent slightly different Matter or tenant shapes.
-
-## Dependency rule
-
-Modules may depend on `shared`. A module should not reach directly into another module's repository, UI or internal implementation.
-
-```text
-module -> shared
-module -> its own domain/application/infrastructure/presentation
-
-avoid:
-module A -> module B internal files
-```
-
-Cross-module workflows should use explicit application contracts or shared events. For example:
-
-```text
-Document uploaded
-      |
-      v
-Document module
-      |
-      +--> shared Document entity
-      |
-      +--> AI/RAG API
-              |
-              v
-       analysis completed
-              |
-              v
-       Legal module
-              |
-              v
-       shared LegalIssue
-```
-
-## Multi-tenancy
-
-A client is an ALIS account, not a tenant. A law firm, legal practice or professional organization is a tenant. Professional modules therefore operate with tenant context.
-
-Every tenant-sensitive request carries `X-Tenant-Id` and `X-Tenant-Slug`. The browser is not trusted for authorization. Java must validate membership and enforce isolation, Python/RAG must scope retrieval and private documents, and Cloudflare realtime must scope connections to tenant/matter rooms.
-
-```text
-ALIS
-├── Consumer account
-│   ├── Situation Scanner
-│   ├── Matters
-│   └── Personal evidence
-│
-└── Professional workspace
-    ├── Tenant A
-    │   ├── Team
-    │   ├── Clients
-    │   ├── Matters
-    │   └── Documents / Evidence
-    │
-    └── Tenant B
-        ├── Team
-        ├── Clients
-        ├── Matters
-        └── Documents / Evidence
-```
-
-## Backend boundaries
-
-- **Java Spring Boot**: authentication, tenant membership/authorization, clients, matters, legal/professional workflows and system-of-record data.
-- **Python FastAPI**: OCR, extraction, retrieval, RAG, analysis, LLM orchestration and reports. Its own backend remains an N-layered modular monolith with Celery as the internal event/task bus.
-- **Cloudflare Worker + Durable Objects**: browser/mobile realtime connection management and tenant/matter room fan-out.
-- **Next.js**: user experience, route composition, evidence capture, module presentation and transport adapters.
-
-## Design system
-
-The visual direction remains intentionally restrained:
-
-- Manrope for headings and display text
-- DM Sans for interface and body text
-- Deep green brand foundation with warm neutral surfaces
-- Minimal Lucide usage, only for navigation and functional affordances
-- No decorative emoji dependency
-- Generous whitespace, subtle borders and restrained shadows
-
-## Product surfaces
-
-- Situation Scanner
-- Matters
-- Conversation
-- Documents
-- Evidence Locker
-- Timeline
-- Legal Issues
-- Professional Help
-- Legal Safety Profile
-- Professional Workspace
-- Tenant switcher
-
-## Legal AI safety
-
-Do not show fake numerical legal risk scores. Use qualitative states such as Potential legal concern, Significant legal concern and Urgent professional review recommended. Findings should expose sources, explanation and uncertainty when available. ALIS does not replace qualified legal professionals.
+The root route is the public landing page. Workspace routes include /dashboard, /scanner, /matters, /matter/MAT-1042, /documents, /profile and /workspace.
 
 ## Environment
 
-```env
-NEXT_PUBLIC_JAVA_API_URL=http://localhost:8080
-NEXT_PUBLIC_AI_API_URL=http://localhost:8000
-NEXT_PUBLIC_REALTIME_URL=ws://localhost:8787
-```
+- NEXT_PUBLIC_JAVA_API_URL: Java service base URL.
+- NEXT_PUBLIC_AI_API_URL: Python AI/RAG service base URL.
+- NEXT_PUBLIC_REALTIME_URL: WebSocket endpoint for analysis status updates.
 
-## Development
+Do not put private credentials in NEXT_PUBLIC variables. These values are exposed to the browser.
 
-```bash
-npm install
-npm run dev
-npm run build
-npm run start
-```
+## Integration status
 
-## Repository relationship
+The current situation intake and evidence selection screens deliberately show local draft/selection state. They do not send documents, create a real matter or produce a legal analysis yet. Connect them to authenticated API workflows before using real client data. Matter list and detail records are marked as example data.
 
-- `Lungaowen/ALIS_BACKEND` = Java application/domain backend and tenant authorization
-- `Lungaowen/ALIS-BACKEND-PY` = Python AI and RAG layer
-- `Lungaowen/alis-frontend-next` = Next.js modular monolith and client experience
+Before production, wire uploads to authenticated storage, validate file types and sizes on the server, enforce account and organisation permissions, add explicit consent and retention controls, and ensure legal findings carry source references and uncertainty.
+
+## Design reference
+
+The redesign uses the document-first workflow idea from [Legal AI SaaS Platform MVP UI/UX Redesign on Dribbble](https://dribbble.com/shots/26620919-Legal-AI-SaaS-Platform-MVP-UI-UX-Redesign): keeping the document, extracted facts and review questions connected instead of spreading them across unrelated screens.
+
+The dashboard also takes broad structural cues from [Zavri Legal, an AI-powered legal dashboard concept on Dribbble](https://dribbble.com/shots/27798424-Zavri-Legal-AI-Powered-Legal-Dashboard-UI-UX-Design). The implementation here has its own layout, wording and design tokens rather than copying either shot.
+
+## Legal safety
+
+ALIS is an information and preparation tool, not a replacement for qualified legal advice. The interface should make uncertainty visible, expose sources where possible and direct high-stakes questions to a qualified professional.

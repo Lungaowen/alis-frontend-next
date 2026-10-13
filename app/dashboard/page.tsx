@@ -1,4 +1,71 @@
- "use client";
-import Link from "next/link"; import {ArrowUpRight,FileText,Plus,ShieldAlert,Sparkles} from "lucide-react"; import {AlisShell} from "@/components/alis-shell"; import {RealtimeStatus} from "@/components/realtime-status";
-const matters=[{id:"MAT-1042",title:"Employment agreement review",status:"Potential legal concern"},{id:"MAT-1037",title:"Landlord notice received",status:"Significant legal concern"}];
-export default function Dashboard(){return <AlisShell><div className="flex flex-wrap justify-between gap-5"><div><p className="text-sm font-semibold text-[#176b5b]">Your legal workspace</p><h1 className="mt-2 text-4xl font-bold">What needs your attention?</h1><p className="mt-2 text-black/50">Start with what is happening in your life, not a legal term.</p></div><RealtimeStatus/></div><div className="mt-8 grid gap-4 md:grid-cols-3"><Link href="/scanner" className="rounded-3xl bg-[#173d35] p-6 text-white"><Plus size={22}/><h2 className="mt-12 text-xl font-bold">Something is happening</h2><p className="mt-2 text-sm text-white/65">Tell ALIS what you are about to do or what already happened.</p></Link><Link href="/documents" className="rounded-3xl border bg-white p-6"><FileText size={22} className="text-[#176b5b]"/><h2 className="mt-12 text-xl font-bold">Review something</h2><p className="mt-2 text-sm text-black/50">Upload a contract, notice, payslip, photo or evidence.</p></Link><div className="rounded-3xl border bg-white p-6"><Sparkles size={22} className="text-[#176b5b]"/><h2 className="mt-12 text-xl font-bold">Legal Safety Profile</h2><p className="mt-2 text-sm text-black/50">Keep important context ready.</p></div></div><section className="mt-10"><h2 className="mb-4 text-xl font-bold">Active Matters</h2><div className="space-y-3">{matters.map(m=><Link key={m.id} href={"/matter/"+m.id} className="flex justify-between rounded-2xl border bg-white p-5"><div><p className="text-xs text-black/35">{m.id}</p><h3 className="mt-1 font-semibold">{m.title}</h3><p className="mt-2 text-sm text-black/50">{m.status}</p></div><ArrowUpRight size={18}/></Link>)}</div></section><div className="mt-8 flex gap-3 rounded-2xl border bg-white p-4 text-sm"><ShieldAlert size={18} className="text-[#176b5b]"/>ALIS explains legal concerns and uncertainty. It does not replace qualified legal advice.</div></AlisShell>}
+import Link from "next/link";
+import Add from "@mui/icons-material/Add";
+import ArrowForward from "@mui/icons-material/ArrowForward";
+import ArrowOutward from "@mui/icons-material/ArrowOutward";
+import AutoAwesome from "@mui/icons-material/AutoAwesome";
+import CheckCircle from "@mui/icons-material/CheckCircle";
+import Description from "@mui/icons-material/Description";
+import FolderOpen from "@mui/icons-material/FolderOpen";
+import Gavel from "@mui/icons-material/Gavel";
+import Security from "@mui/icons-material/Security";
+import { AlisShell } from "@/components/alis-shell";
+
+const sampleMatters = [
+  { id: "MAT-1042", title: "Employment agreement review", description: "Contract terms to clarify before signing", status: "Review suggested", tone: "amber", updated: "Example matter" },
+  { id: "MAT-1037", title: "Landlord notice received", description: "Notice and supporting documents", status: "In progress", tone: "green", updated: "Example matter" },
+];
+
+export default function Dashboard() {
+  return (
+    <AlisShell>
+      <section className="page-intro">
+        <div><p className="page-kicker">Your legal workspace</p><h1 className="page-title">Keep the full picture in view.</h1><p className="page-description">Start with a situation, review a document or continue organising a matter. ALIS helps you put the details in order before deciding what to do next.</p></div>
+        <div className="page-intro-actions"><span className="sample-label">Example workspace data</span><Link href="/scanner" className="button-primary"><Add /> New situation</Link></div>
+      </section>
+
+      <div className="dashboard-grid">
+        <div className="dashboard-main-column">
+          <section className="welcome-panel">
+            <div className="welcome-panel-content">
+              <span className="panel-label">A useful place to begin</span>
+              <h2>What is happening in your life right now?</h2>
+              <p>You do not need a legal label. Describe what happened, what you received or what you are considering. Start with the facts you know.</p>
+              <div className="welcome-panel-actions"><Link href="/scanner" className="button-secondary">Describe the situation <ArrowForward /></Link><span className="welcome-mark"><AutoAwesome /></span></div>
+            </div>
+          </section>
+
+          <section className="quick-grid" aria-label="Quick actions">
+            <Link href="/scanner" className="quick-card"><div className="quick-card-top"><span className="quick-card-icon"><AutoAwesome /></span><ArrowOutward className="quick-card-arrow" /></div><h3>Talk through a situation</h3><p>Write in plain language and keep the context together.</p></Link>
+            <Link href="/documents" className="quick-card"><div className="quick-card-top"><span className="quick-card-icon"><Description /></span><ArrowOutward className="quick-card-arrow" /></div><h3>Review a document</h3><p>Choose a contract, notice, photo or supporting file.</p></Link>
+          </section>
+
+          <section className="panel panel-padding">
+            <div className="panel-heading"><div><h2>Recent matters</h2><p>Example records to demonstrate the workspace.</p></div><Link href="/matters" className="button-small">View all <ArrowForward fontSize="small" /></Link></div>
+            <div className="matter-list">
+              {sampleMatters.map((matter) => (
+                <Link href={"/matter/" + matter.id} className="matter-row" key={matter.id}>
+                  <span className="matter-file-icon"><FolderOpen /></span>
+                  <span className="matter-row-main"><strong className="matter-row-title">{matter.title}</strong><span className="matter-row-meta"><span>{matter.id}</span><span>·</span><span>{matter.updated}</span></span><span className="matter-row-meta">{matter.description}</span></span>
+                  <span className={"status-pill " + (matter.tone === "amber" ? "status-amber" : "status-green")}><i />{matter.status}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <aside className="dashboard-side-column">
+          <section className="next-step-panel"><span className="next-step-icon"><CheckCircle /></span><p className="panel-label">A good next step</p><h2>Keep dates and documents close.</h2><p>For notices, agreements and disputes, record when something happened and keep a copy of the material you received.</p><Link href="/documents" className="button-quiet">Open evidence locker <ArrowForward /></Link></section>
+          <section className="panel panel-padding">
+            <div className="panel-heading"><div><h2>How ALIS approaches concerns</h2><p>Useful information, without false certainty.</p></div></div>
+            <div className="principle-list">
+              <div className="principle-item"><CheckCircle /><span><strong>Show the context</strong><p>Keep findings connected to the document or facts they came from.</p></span></div>
+              <div className="principle-item"><Description /><span><strong>Make sources visible</strong><p>Important legal information should be traceable to a source.</p></span></div>
+              <div className="principle-item"><Gavel /><span><strong>Respect professional judgement</strong><p>Uncertainty and the limits of automated guidance should be clear.</p></span></div>
+            </div>
+          </section>
+          <div className="notice-box"><Security /><div><strong>Preparation, not a legal verdict</strong><p>ALIS helps structure information. Consult a qualified legal professional before making high-stakes decisions.</p></div></div>
+        </aside>
+      </div>
+    </AlisShell>
+  );
+}
