@@ -1,3 +1,25 @@
-import Link from "next/link"; import {ArrowUpRight,Plus} from "lucide-react"; import {AlisShell} from "@/components/alis-shell";
-const matters=[{id:"MAT-1042",title:"Employment agreement review",summary:"Contract clauses requiring attention",status:"IN_REVIEW"},{id:"MAT-1037",title:"Landlord notice received",summary:"Notice and supporting evidence",status:"OPEN"}];
-export default function Matters(){return <AlisShell><div className="flex items-end justify-between"><div><p className="text-sm font-semibold text-[#176b5b]">Workspace</p><h1 className="mt-2 text-4xl font-bold">Matters</h1></div><Link href="/scanner" className="inline-flex items-center gap-2 rounded-xl bg-[#173d35] px-4 py-3 text-sm font-semibold text-white"><Plus size={16}/>New Matter</Link></div><div className="mt-8 grid gap-4">{matters.map(m=><Link href={"/matter/"+m.id} key={m.id} className="rounded-3xl border bg-white p-6"><div className="flex justify-between"><div><p className="text-xs text-black/35">{m.id} · {m.status}</p><h2 className="mt-2 text-xl font-bold">{m.title}</h2><p className="mt-2 text-sm text-black/50">{m.summary}</p></div><ArrowUpRight size={18}/></div></Link>)}</div></AlisShell>}
+"use client";
+import Link from "next/link";
+import {useMemo,useState} from "react";
+import {AlisShell} from "@/components/alis-shell";
+import {Icon} from "@/components/icon";
+
+const data=[
+  ["MAT-1042","Employment agreement review","Nandi M.","REVIEW","Clause extraction completed","18 min ago"],
+  ["MAT-1037","Landlord notice received","Thabo K.","OPEN","Evidence added","1 hr ago"],
+  ["MAT-1029","Small business registration","Lerato P.","OPEN","Questionnaire updated","Yesterday"],
+  ["MAT-1023","Vehicle sale dispute","Sizwe D.","URGENT","Professional review requested","Yesterday"],
+  ["MAT-1014","Independent contractor agreement","Mpho R.","CLOSED","Matter archived","4 days ago"]
+];
+
+export default function Matters(){
+  const [query,setQuery]=useState(""); const [filter,setFilter]=useState("All");
+  const filtered=useMemo(()=>data.filter(r=>(r.join(" ").toLowerCase().includes(query.toLowerCase()))&&(filter==="All"||r[3]===filter)),[query,filter]);
+  const cls=(s:string)=>s==="URGENT"?"status-urgent":s==="REVIEW"?"status-review":s==="CLOSED"?"status-muted":"status-open";
+  return <AlisShell><div className="page">
+    <div className="page-head"><div><div className="eyebrow">Matter workspace</div><h1>Matters</h1><p>One structured record for the situation, people, evidence, legal issues and professional review.</p></div><Link href="/scanner" className="btn btn-primary"><Icon name="plus" size={15}/> New matter</Link></div>
+    <section className="card" style={{marginTop:22}}><div className="card-head"><div style={{display:"flex",gap:9,alignItems:"center",flexWrap:"wrap"}}><div style={{display:"flex",alignItems:"center",gap:8,minWidth:240,padding:"9px 11px",border:"1px solid var(--line)",borderRadius:10,background:"#fff"}}><Icon name="search" size={14}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search matters, clients, IDs..." style={{border:0,outline:0,width:"100%",fontSize:11}}/></div><select value={filter} onChange={e=>setFilter(e.target.value)} className="btn" style={{padding:"9px 11px",fontSize:11}}><option>All</option><option>OPEN</option><option>REVIEW</option><option>URGENT</option><option>CLOSED</option></select></div><span style={{color:"var(--subtle)",fontSize:10}}>{filtered.length} shown</span></div>
+      <div style={{overflowX:"auto"}}><table className="table"><thead><tr><th>Matter</th><th>Client</th><th>Status</th><th>Latest activity</th><th>Updated</th><th/></tr></thead><tbody>{filtered.map(r=><tr key={r[0]}><td><Link href={"/matter/"+r[0]}><div className="matter-title">{r[1]}</div><div className="matter-id">{r[0]}</div></Link></td><td>{r[2]}</td><td><span className={"status "+cls(r[3])}><span className="dot"/>{r[3]}</span></td><td>{r[4]}</td><td>{r[5]}</td><td><Link href={"/matter/"+r[0]} className="icon-button" aria-label="Open matter"><Icon name="arrow" size={14}/></Link></td></tr>)}</tbody></table></div>
+    </section>
+  </div></AlisShell>
+}
