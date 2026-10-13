@@ -1,20 +1,15 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Roboto } from "next/font/google";
-
-const roboto = Roboto({
-  weight: ["300", "400", "500", "700"],
-  subsets: ["latin"],
-});
+import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
   title: "ALIS | Legal Intelligence",
   description: "Legal risk analysis and case preparation.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={roboto.className}>
+    <html lang="en">
       <body>{children}</body>
     </html>
   );
