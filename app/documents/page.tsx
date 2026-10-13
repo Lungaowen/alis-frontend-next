@@ -1,3 +1,19 @@
- "use client";
-import {useState} from "react"; import {FileUp,LoaderCircle,UploadCloud} from "lucide-react"; import {AlisShell} from "@/components/alis-shell";
-export default function Documents(){const [file,setFile]=useState<File|null>(null);const [queued,setQueued]=useState(false);return <AlisShell><p className="text-sm font-semibold text-[#176b5b]">Evidence Locker</p><h1 className="mt-2 text-4xl font-bold">Documents & evidence</h1><p className="mt-3 max-w-2xl text-black/50">Capture material that helps explain what happened. AI work can continue in the background.</p><label className="mt-8 block cursor-pointer rounded-3xl border-2 border-dashed bg-white p-12 text-center"><UploadCloud className="mx-auto text-[#176b5b]" size={34}/><div className="mt-4 font-semibold">Choose a file</div><p className="mt-2 text-sm text-black/45">Contracts, notices, payslips, PDFs, images and evidence</p><input type="file" className="hidden" onChange={e=>setFile(e.target.files?.[0]??null)}/></label>{file&&<div className="mt-4 flex justify-between rounded-2xl border bg-white p-4"><div className="flex gap-3"><FileUp size={20}/><div><div className="text-sm font-semibold">{file.name}</div><div className="text-xs text-black/40">{Math.round(file.size/1024)} KB</div></div></div><button onClick={()=>setQueued(true)} className="rounded-xl bg-[#173d35] px-4 py-2 text-sm font-semibold text-white">Analyse</button></div>}{queued&&<div className="mt-4 flex gap-3 rounded-2xl border bg-white p-4 text-sm"><LoaderCircle className="animate-spin text-[#176b5b]" size={18}/>Document queued for the Celery AI/RAG layer.</div>}</AlisShell>}
+"use client";
+import {useState} from "react";
+import {AlisShell} from "@/components/alis-shell";
+import {Icon} from "@/components/icon";
+
+const seeded=[["Lease_notice_02.pdf","MAT-1037","PDF · 4 pages","Processed"],["Employment_contract.pdf","MAT-1042","PDF · 12 pages","Analysed"],["Vehicle_sale_photos.zip","MAT-1023","Archive · 18 items","Indexed"],["ID_copy_mpho.pdf","MAT-1014","PDF · 1 page","Stored"]];
+
+export default function Documents(){
+  const [file,setFile]=useState<File|null>(null); const [queued,setQueued]=useState(false);
+  return <AlisShell><div className="page">
+    <div className="page-head"><div><div className="eyebrow">Evidence locker</div><h1>Documents & evidence</h1><p>Keep the source material close to the matter it supports. Processing, extraction and analysis can happen asynchronously.</p></div><button className="btn btn-primary" onClick={()=>document.getElementById("file-input")?.click()}><Icon name="upload" size={15}/> Add evidence</button></div>
+    <section className="card" style={{marginTop:22}}><div className="card-body">
+      <label htmlFor="file-input" style={{display:"block",border:"1.5px dashed #b8c8c0",background:"#f8fbf9",borderRadius:15,padding:32,textAlign:"center",cursor:"pointer"}}><Icon name="upload" size={27}/><strong style={{display:"block",marginTop:10,fontSize:13}}>{file?file.name:"Drop a document here, or choose a file"}</strong><p style={{margin:"5px 0 0",color:"var(--muted)",fontSize:10}}>PDF, DOCX, images and supporting evidence. 10 MB demo limit.</p><input id="file-input" type="file" hidden onChange={e=>{setFile(e.target.files?.[0]??null);setQueued(false)}}/></label>
+      {file&&<div className="activity-row" style={{borderTop:0}}><div className="activity-icon"><Icon name="document" size={14}/></div><div><strong>{file.name}</strong><span>{Math.round(file.size/1024)} KB · ready for analysis</span></div><button className="btn btn-primary" onClick={()=>setQueued(true)}>Queue analysis</button></div>}
+      {queued&&<div className="banner" style={{marginTop:12}}><Icon name="check" size={14}/> Document queued for the Python AI/RAG layer.</div>}
+    </div></section>
+    <section className="card" style={{marginTop:14}}><div className="card-head"><div><h2>Recent evidence</h2><p>Tenant-scoped document activity</p></div><button className="btn"><Icon name="dots" size={14}/> Filters</button></div><div className="card-body">{seeded.map(r=><div className="activity-row" key={r[0]}><div className="activity-icon"><Icon name="document" size={14}/></div><div><strong>{r[0]}</strong><span>{r[1]} · {r[2]}</span></div><span className="status status-open">{r[3]}</span></div>)}</div></section>
+  </div></AlisShell>
+}
