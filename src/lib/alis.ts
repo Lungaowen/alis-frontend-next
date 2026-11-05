@@ -4,7 +4,7 @@
 
 import { httpGet, httpPost, httpPut, httpDelete } from "./http";
 import { pGet, pPost, pDelete, pDownload, pythonApi } from "./pythonApi";
-import { jGet, jPost, jDelete, javaApi } from "./javaApi";
+import { jGet, jPost, jDelete, javaApi, documentApi } from "./javaApi";
 import { getStoredSession } from "./auth";
 import axios from "axios";
 import { toast } from "sonner";
@@ -236,27 +236,29 @@ export interface UploadOptions {
 }
 
 // ====================== DOCUMENTS ======================
-export const getMyDocuments = () => jGet<DocumentItem[]>("/api/client/documents");
-export const getDocument = (id: number) => jGet<DocumentItem>(`/api/client/documents/${id}`);
-export const deleteDocument = (id: number) => jDelete(`/api/client/documents/${id}`);
+export const getMyDocuments = () => documentApi.getMyDocuments();
+export const getDocument = (id: number) => documentApi.getDocument(id);
+export const deleteDocument = (id: number) => documentApi.deleteDocument(id);
 
 // ====================== WORKER API ======================
-const WORKER_URL = import.meta.env.VITE_WORKER_URL || "https://filemeta-worker.lungaowen14.workers.dev";
+const WORKER_URL = process.env.NEXT_PUBLIC_FILE_WORKER_URL || "https://filemeta-worker.lungaowen14.workers.dev";
 
 // ====================== DIRECT DATABASE CONNECTION ======================
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+// Browser clients must use the public anon key with Row Level Security enabled.
+// Never place a Supabase service-role key in a frontend bundle.
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 let supabaseClient: any = null;
 
 function getSupabaseClient() {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     console.warn('Supabase credentials not set');
     return null;
   }
 
   if (!supabaseClient) {
-    supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
   return supabaseClient;
@@ -708,8 +710,10 @@ export async function uploadDocument(
 export const triggerAnalysis = (documentId: number) =>
   pPost<{ status: string }>(`/api/analysis/run/${documentId}`, {});
 
-export const getStatus = (documentId: number) =>
-  pGet<ComplianceStatus>(`/api/analysis/status/${documentId}`);
+export const getStatus = async (documentId: number): Promise<ComplianceStatus> => {
+  const status = await pGet<{ documentId: number; status: string; title?: string; riskLevel?: RiskLevel; reportId?: number; reportUrl?: string; message?: string }>(`/api/analysis/status/${documentId}`);
+  return { documentId: status.documentId, title: status.title || "", documentStatus: status.status, analysisStatus: status.status, riskLevel: status.riskLevel, reportId: status.reportId, reportReady: Boolean(status.reportId || status.reportUrl), message: status.message };
+};
 
 export const getResult = (documentId: number) =>
   pGet<ReportInfo>(`/api/analysis/report/${documentId}`);
@@ -846,11 +850,7 @@ export interface DetailedReport {
 }
 
 export const getDetailedReport = async (documentId: number): Promise<DetailedReport> => {
-  const response = await axios.get<DetailedReport>(
-    `https://102-37-137-111.nip.io/api/analysis/report/${documentId}`
-  );
-  
-  const report = response.data;
+  const report = await pGet<DetailedReport>(`/api/analysis/report/${documentId}`);
   
   // Extract text from report clauses and insert into document_content via direct database
   if (report.report_summary_json?.clauses && Array.isArray(report.report_summary_json.clauses)) {
@@ -922,7 +922,7 @@ export function exportToCSV<T extends Record<string, any>>(
 
 export const getDocumentReports = async (documentId: number): Promise<ReportInfo[]> => {
   try {
-    const report = await httpGet<ReportInfo>(`/api/client/documents/${documentId}/report`);
+    const report = await pGet<ReportInfo>(`/api/analysis/report/${documentId}`);
     return report ? [report] : [];
   } catch (err: any) {
     if (err?.response?.status === 404) return [];
@@ -946,7 +946,9 @@ export interface ClientProfile {
 }
 
 export const getClientProfile = async (): Promise<ClientProfile> => {
-  return httpGet<ClientProfile>("/api/client/profile");
+  const profile = await httpGet<{ userId: number; fullName: string; phoneNumber?: string; province?: string; updatedAt?: string }>("/api/v1/client/profile");
+  const session = getStoredSession();
+  return { clientId: profile.userId, fullName: profile.fullName, email: session?.email || "", username: session?.email || "", role: session?.role || "USER", createdAt: profile.updatedAt || "", active: true, deactivatedAt: null, barNumber: null, lawFirm: null, companyName: null, dealSpecialty: null };
 };
 
 export interface ResetPasswordResponse {
@@ -1167,18 +1169,15 @@ export const searchGlobal = async (q: string, page = 0, pageSize = 10): Promise<
 
 // ====================== PROFILE ======================
 export const updateProfile = (body: {
-  fullName?: string;
-  username?: string;
-  currentPassword?: string;
-  newPassword?: string;
-}) => httpPut<{ message?: string }>("/api/client/profile", body);
+  fullName?: string; username?: string; currentPassword?: string; newPassword?: string;
+}) => httpPut<{ userId?: number; fullName?: string }>("/api/v1/client/profile", { fullName: body.fullName });
 
 // ====================== REPORTS ======================
 export const getReport = (reportId: number) =>
   httpGet<ReportInfo>(`/api/client/reports/${reportId}`);
 
 export const getReportForDocument = (documentId: number) =>
-  httpGet<ReportInfo>(`/api/client/documents/${documentId}/report`);
+  pGet<ReportInfo>(`/api/analysis/report/${documentId}`);
 
 export const adminClientAudit = (clientId: number) =>
   httpGet<AuditEntry[]>(`/api/admin/audit/client/${clientId}`);
