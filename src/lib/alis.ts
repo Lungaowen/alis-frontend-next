@@ -630,19 +630,17 @@ export async function uploadDocument(
   formData.append("jurisdiction", opts.jurisdiction ?? "South Africa");
   formData.append("file", file);
 
-  const token = localStorage.getItem("alis_token");
-
-  const response = await axios.post<{
+  const response = await pythonApi.post<{
     task_id: string;
     status: string;
     document_id: number;
     file_name: string;
     message: string;
-  }>("https://102-37-137-111.nip.io/api/process", formData, {
+  }>("/api/process", formData, {
     headers: {
       accept: "application/json",
-      Authorization: token ? `Bearer ${token}` : "",
-      // Let browser set proper multipart boundary
+      "Content-Type": "multipart/form-data",
+      // Axios/browser supplies the multipart boundary.
     },
     onUploadProgress: (e) => {
       if (e.total && progressCb) {
@@ -714,7 +712,7 @@ export const getStatus = (documentId: number) =>
   pGet<ComplianceStatus>(`/api/analysis/status/${documentId}`);
 
 export const getResult = (documentId: number) =>
-  httpGet<ReportInfo>(`/api/analysis/result/${documentId}`);
+  pGet<ReportInfo>(`/api/analysis/report/${documentId}`);
 
 export const getPipelineStatus = (documentId: number) =>
   pGet<{ documentId: number; status: string; step?: string; progress?: number; message?: string }>(
