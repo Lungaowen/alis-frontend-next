@@ -1,98 +1,22 @@
-// Centralized axios instance for ALIS backend.
-// - Reads base URL via getApiBaseUrl() on every request (runtime override support)
-// - Attaches Bearer JWT from localStorage
-// - On 401: clears session and redirects to /login
-// - On 403: surfaces an "AlisForbiddenError" so callers can show inline messaging
+// Java/Spring API client. All requests use the Cloudflare gateway.
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
 import { getApiBaseUrl } from "./api";
+import { toJavaApiPath } from "./api-contracts";
 import { getStoredSession, storeSession } from "./auth";
-
-export class AlisForbiddenError extends Error {
-  status = 403 as const;
-  constructor(message = "You do not have permission to perform this action.") {
-    super(message);
-  }
-}
-
-export class AlisApiError extends Error {
-  constructor(public status: number, message: string, public body?: unknown) {
-    super(message);
-  }
-}
-
+export class AlisForbiddenError extends Error { readonly status = 403 as const; constructor(message = "You do not have permission to perform this action.") { super(message); } }
+export class AlisApiError extends Error { constructor(public status: number, message: string, public body?: unknown) { super(message); } }
 export const http = axios.create({ timeout: 60_000 });
-
-http.interceptors.request.use((config) => {
-  config.baseURL = getApiBaseUrl().replace(/\/+$/, "");
-  const session = getStoredSession();
-  if (session?.token && config.headers) {
-    config.headers.set("Authorization", `Bearer ${session.token}`);
-  }
-  return config;
-});
-
+http.interceptors.request.use((config) => { config.baseURL = getApiBaseUrl(); if (config.url) config.url = toJavaApiPath(config.url); const token = getStoredSession()?.token; if (token) config.headers.set("Authorization", `Bearer ${token}`); return config; });
 function extractMessage(data: unknown, fallback: string): string {
-  if (data && typeof data === "object" && "message" in (data as Record<string, unknown>)) {
-    const m = (data as { message: unknown }).message;
-    if (typeof m === "string" && m.length > 0) return m;
-  }
-  if (typeof data === "string" && data.length > 0 && data.length < 500) return data;
-  return fallback;
+ if (data && typeof data === "object" && "message" in data) { const m=(data as {message?:unknown}).message; if(typeof m === "string" && m) return m; }
+ if (data && typeof data === "object" && "detail" in data) { const d=(data as {detail?:unknown}).detail; if(typeof d === "string" && d) return d; }
+ if(typeof data === "string" && data.length>0 && data.length<500) return data; return fallback;
 }
-
-http.interceptors.response.use(
-  (r) => r,
-  (error: AxiosError) => {
-    const status = error.response?.status ?? 0;
-    const data = error.response?.data;
-    const isLoginRequest = error.config?.url?.includes("/api/auth/login");
-
-    if (status === 401 || status === 403) {
-      // For login failures, extract the actual error message from response
-      if (isLoginRequest) {
-        const errorMessage = extractMessage(data, "Invalid credentials");
-        return Promise.reject(new AlisApiError(status, errorMessage, data));
-      }
-
-      // Only clear session if we actually have a session stored
-      const currentSession = getStoredSession();
-      if (currentSession) {
-        // Per assessment rubric: expired/invalid token (401) AND forbidden (403)
-        // both clear session and redirect to login with an "expired" message.
-        storeSession(null);
-        if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
-          try {
-            sessionStorage.setItem("alis.loginMessage", "Session expired, please log in again.");
-          } catch { /* ignore */ }
-          window.location.assign("/login");
-        }
-      }
-      return Promise.reject(
-        new AlisApiError(status, status === 401
-          ? "Your session has expired. Please sign in again."
-          : extractMessage(data, "You do not have permission for this action."))
-      );
-    }
-    return Promise.reject(
-      new AlisApiError(status, extractMessage(data, error.message || "Request failed"), data)
-    );
-  }
-);
-
-// Convenience helpers (typed)
-export async function httpGet<T>(path: string, config?: AxiosRequestConfig): Promise<T> {
-  const r = await http.get<T>(path, config);
-  return r.data;
-}
-export async function httpPost<T>(path: string, body?: unknown, config?: AxiosRequestConfig): Promise<T> {
-  const r = await http.post<T>(path, body, config);
-  return r.data;
-}
-export async function httpPut<T>(path: string, body?: unknown, config?: AxiosRequestConfig): Promise<T> {
-  const r = await http.put<T>(path, body, config);
-  return r.data;
-}
-export async function httpDelete<T>(path: string, config?: AxiosRequestConfig): Promise<T> {
-  const r = await http.delete<T>(path, config);
-  return r.data;
-}
+http.interceptors.response.use(r=>r,(error:AxiosError)=>{ const status=error.response?.status??0; const data=error.response?.data; const isLogin=error.config?.url?.includes("/api/v1/auth/login"); const message=extractMessage(data,error.message||"Request failed");
+ // 403 is an authorization decision, not an expired session.
+ if(status===401 && !isLogin && getStoredSession()){ storeSession(null); if(typeof window!=="undefined"&&!window.location.pathname.startsWith("/login")){ try{sessionStorage.setItem("alis.loginMessage","Session expired, please log in again.");}catch{/* ignore */} window.location.assign("/login"); } }
+ return Promise.reject(new AlisApiError(status,isLogin?extractMessage(data,"Invalid credentials"):message,data)); });
+export async function httpGet<T>(path:string,config?:AxiosRequestConfig):Promise<T>{return (await http.get<T>(path,config)).data;}
+export async function httpPost<T>(path:string,body?:unknown,config?:AxiosRequestConfig):Promise<T>{return (await http.post<T>(path,body,config)).data;}
+export async function httpPut<T>(path:string,body?:unknown,config?:AxiosRequestConfig):Promise<T>{return (await http.put<T>(path,body,config)).data;}
+export async function httpDelete<T>(path:string,config?:AxiosRequestConfig):Promise<T>{return (await http.delete<T>(path,config)).data;}

@@ -1,92 +1,11 @@
-// src/lib/javaApi.ts
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
-import type { DocumentItem } from "./alis";
-import type { DashboardResponse } from "../types/alis";
-
-export const JAVA_BASE_URL =
-  (import.meta.env.VITE_JAVA_API_URL as string | undefined)?.replace(/\/+$/, "") ||
-  "https://54-235-231-201.nip.io";
-
-const TOKEN_KEY = "alis_token";
-
-export function getToken(): string | null {
-  try {
-    return localStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-export const javaApi = axios.create({
-  baseURL: JAVA_BASE_URL,
-  timeout: 60000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-// Request interceptor
-javaApi.interceptors.request.use((config) => {
-  const token = getToken();
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Response interceptor
-javaApi.interceptors.response.use(
-  (response: AxiosResponse) => response,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem("alis_user");
-      localStorage.removeItem("alis.session");
-      localStorage.removeItem("alis.token");
-
-      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
-        window.location.assign("/login");
-      }
-    }
-    return Promise.reject(error);
-  }
-);
-
-// Convenience methods
-export const jGet = async <T = any>(url: string, config?: AxiosRequestConfig) =>
-  (await javaApi.get<T>(url, config)).data;
-
-export const jPost = async <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
-  (await javaApi.post<T>(url, data, config)).data;
-
-export const jPut = async <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
-  (await javaApi.put<T>(url, data, config)).data;
-
-export const jDelete = async <T = any>(url: string, config?: AxiosRequestConfig) =>
-  (await javaApi.delete<T>(url, config)).data;
-
-// ─── Document endpoints (Java) ────────────────────────────────────────────
-// Used by LegalDocumentsPage, alis.ts (re-exported), and others to list,
-// fetch, and delete documents owned by the authenticated client.
-export const documentApi = {
-  /** GET /api/client/documents — list all documents for the authenticated client */
-  getMyDocuments: (): Promise<DocumentItem[]> =>
-    jGet<DocumentItem[]>("/api/client/documents"),
-
-  /** GET /api/client/documents/{id} — fetch one owned document */
-  getDocument: (id: number): Promise<DocumentItem> =>
-    jGet<DocumentItem>(`/api/client/documents/${id}`),
-
-  /** DELETE /api/client/documents/{id} */
-  deleteDocument: (id: number): Promise<{ success?: boolean }> =>
-    jDelete<{ success?: boolean }>(`/api/client/documents/${id}`),
-};
-
-// ─── Admin endpoints (Java) ───────────────────────────────────────────────
-export const adminApi = {
-  /** GET /api/admin/dashboard — fetch admin dashboard data */
-  getDashboard: (): Promise<DashboardResponse> =>
-    jGet<DashboardResponse>("/api/admin/dashboard"),
-};
-
-export default javaApi;
+import axios,{AxiosRequestConfig}from"axios";import type{DocumentItem}from"./alis";import type{DashboardResponse}from"../types/alis";import{getApiBaseUrl}from"./api";import{toJavaApiPath}from"./api-contracts";import{getStoredSession,storeSession}from"./auth";
+export const JAVA_BASE_URL=getApiBaseUrl();export function getToken():string|null{return getStoredSession()?.token??null;}
+export const javaApi=axios.create({baseURL:JAVA_BASE_URL,timeout:60000,headers:{"Content-Type":"application/json"}});
+javaApi.interceptors.request.use(config=>{config.baseURL=getApiBaseUrl();if(config.url)config.url=toJavaApiPath(config.url);const token=getToken();if(token)config.headers.set("Authorization",`Bearer ${token}`);return config;});
+javaApi.interceptors.response.use(r=>r,error=>{if(error.response?.status===401&&getStoredSession()){storeSession(null);if(typeof window!=="undefined"&&!window.location.pathname.startsWith("/login"))window.location.assign("/login");}return Promise.reject(error);});
+export const jGet=async<T=any>(url:string,config?:AxiosRequestConfig)=>(await javaApi.get<T>(url,config)).data;export const jPost=async<T=any>(url:string,data?:any,config?:AxiosRequestConfig)=>(await javaApi.post<T>(url,data,config)).data;export const jPut=async<T=any>(url:string,data?:any,config?:AxiosRequestConfig)=>(await javaApi.put<T>(url,data,config)).data;export const jDelete=async<T=any>(url:string,config?:AxiosRequestConfig)=>(await javaApi.delete<T>(url,config)).data;
+interface MatterSummary{id:number;}interface BackendDocument{id:number;clientId:number;matterId:number;fileName:string;status:string;createdAt:string;storageKey?:string;}
+function mapDocument(d:BackendDocument):DocumentItem{return{documentId:d.id,title:d.fileName,status:d.status as DocumentItem["status"],uploadedAt:d.createdAt,filePath:d.storageKey,clientId:d.clientId};}
+export const documentApi={getMyDocuments:async():Promise<DocumentItem[]>=>{const matters=await jGet<MatterSummary[]>("/api/v1/matters");const groups=await Promise.all(matters.map(m=>jGet<BackendDocument[]>(`/api/v1/matters/${m.id}/documents`)));return groups.flat().map(mapDocument);},getDocument:async(id:number):Promise<DocumentItem>=>{const docs=await documentApi.getMyDocuments();const found=docs.find(d=>d.documentId===id);if(!found)throw new Error(`Document ${id} was not found in your matters.`);return found;},deleteDocument:async(_id:number):Promise<{success?:boolean}>=>{throw new Error("Document deletion is not yet exposed by the Java API. No request was sent.");}};
+// The current Spring API does not yet expose an admin dashboard aggregate.
+export const adminApi={getDashboard:():Promise<DashboardResponse>=>jGet<DashboardResponse>("/api/v1/admin/dashboard")};export default javaApi;

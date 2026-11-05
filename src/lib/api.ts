@@ -1,34 +1,14 @@
-// Central API base URL configuration with runtime override.
-// Resolution order:
-//   1. localStorage["alis.apiBaseUrl"]   (set via the in-app dialog)
-//   2. import.meta.env.VITE_API_BASE_URL (build-time)
-//   3. "http://localhost:8081"           (fallback)
-
+// One public API entry point. The Cloudflare Worker routes /api/* to Java
+// and /ai/* to Python, so the browser never needs direct origin URLs.
 const STORAGE_KEY = "alis.apiBaseUrl";
-const ENV_DEFAULT = "https://54-235-231-201.nip.io";
-
+const ENV_DEFAULT = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8787";
 export function getApiBaseUrl(): string {
-  if (typeof window !== "undefined") {
-    const override = window.localStorage.getItem(STORAGE_KEY);
-    if (override) return override;
-  }
-  return ENV_DEFAULT;
+  if (typeof window !== "undefined") { try { const override = window.localStorage.getItem(STORAGE_KEY); if (override) return override.replace(/\/+$/, ""); } catch { /* storage unavailable */ } }
+  return ENV_DEFAULT.replace(/\/+$/, "");
 }
-
 export function setApiBaseUrl(url: string | null) {
   if (typeof window === "undefined") return;
-  if (!url) window.localStorage.removeItem(STORAGE_KEY);
-  else window.localStorage.setItem(STORAGE_KEY, url.replace(/\/+$/, ""));
+  try { if (!url) window.localStorage.removeItem(STORAGE_KEY); else window.localStorage.setItem(STORAGE_KEY, url.replace(/\/+$/, "")); } catch { /* ignore storage failures */ }
 }
-
-export const API_BASE_URL = getApiBaseUrl();
-
-/**
- * Build a full API URL from a path. Reads the current base URL on every call
- * so runtime overrides take effect without a reload.
- */
-export function apiUrl(path: string): string {
-  const base = getApiBaseUrl().replace(/\/+$/, "");
-  const suffix = path.startsWith("/") ? path : `/${path}`;
-  return `${base}${suffix}`;
-}
+export const API_BASE_URL = ENV_DEFAULT.replace(/\/+$/, "");
+export function apiUrl(path: string): string { const suffix = path.startsWith("/") ? path : `/${path}`; return `${getApiBaseUrl()}${suffix}`; }
